@@ -1,5 +1,5 @@
 use super::*;
-use hidpp::feature::extended_dpi::{DpiRange, Lod};
+use hidpp::feature::extended_dpi::{DpiRange, Lod, SensorCapabilities};
 use hidpp::feature::per_key_lighting::FramePersistence;
 use hidpp::feature::smartshift::WheelMode;
 
@@ -336,7 +336,10 @@ async fn dpi_reads_and_writes_work_on_a_device_with_only_extended_dpi() -> Resul
     // `Capabilities::from_feature_ids` turns the DPI panel on for 0x2201 *or*
     // 0x2202, so a mouse that only speaks 0x2202 has to be drivable — it used
     // to get a panel that failed every read and write.
-    let (raw, handle) = ScriptedRawHidChannel::with_responder(extended_dpi_scripted_response);
+    let dpi_x = std::sync::Mutex::new(800);
+    let (raw, handle) = ScriptedRawHidChannel::with_dynamic_responder(move |request| {
+        extended_dpi_scripted_response(request, &dpi_x)
+    });
     let channel = scripted_channel(raw).await;
     let shared = SharedChannel::new(
         channel,
@@ -372,10 +375,11 @@ async fn dpi_reads_and_writes_work_on_a_device_with_only_extended_dpi() -> Resul
         .find(|report| report.len() == 20 && report[2] == 0x05 && report[3] >> 4 == 0x06)
         .expect("a DPI write must reach the device");
     assert_eq!(u16::from_be_bytes([write[5], write[6]]), 1200);
-    // No independent Y axis on this sensor, so the spec has the host send 0.
+    // The sensor does not advertise an independent Y axis, so the spec has
+    // the host send 0.
     assert_eq!(u16::from_be_bytes([write[7], write[8]]), 0);
-    // Lift-off distance is read back and rewritten unchanged — the packet has
-    // no "leave alone" encoding, so writing a bare 0 would retune the sensor.
+    // It does advertise lift-off control, so the LOD is read back and
+    // rewritten unchanged — the packet has no "leave alone" encoding.
     assert_eq!(write[9], u8::from(Lod::Medium));
     Ok(())
 }
@@ -571,8 +575,12 @@ fn scripted_response(request: &[u8]) -> Option<Vec<u8>> {
 
 /// A mouse that exposes `0x2202 ExtendedAdjustableDpi` and **no**
 /// `0x2201 AdjustableDpi` — the shape `Capabilities::from_feature_ids` lights
-/// the DPI panel up for but the write path could not drive.
-fn extended_dpi_scripted_response(request: &[u8]) -> Option<Vec<u8>> {
+/// the DPI panel up for but the write path could not drive. `dpi_x` is the
+/// sensor's live X-axis DPI, which a write changes.
+fn extended_dpi_scripted_response(
+    request: &[u8],
+    dpi_x: &std::sync::Mutex<u16>,
+) -> Option<Vec<u8>> {
     if request.len() < 7 || !matches!(request[0], 0x10 | 0x11) {
         return None;
     }
@@ -596,6 +604,13 @@ fn extended_dpi_scripted_response(request: &[u8]) -> Option<Vec<u8>> {
             payload[0] = 1;
             false
         }
+        // getSensorCapabilities: echo the sensor, no DPI levels, lift-off
+        // distance control but no independent Y axis.
+        (0x05, 0x01) => {
+            payload[0] = request[4];
+            payload[2] = SensorCapabilities::LOD.bits();
+            false
+        }
         // getSensorDpiRanges: echo (sensorIdx, direction, page), then 400 with
         // a step-100 hyphen up to 800, a fixed 1200, and the end-of-list word.
         (0x05, 0x02) => {
@@ -604,16 +619,17 @@ fn extended_dpi_scripted_response(request: &[u8]) -> Option<Vec<u8>> {
                 .copy_from_slice(&[0x01, 0x90, 0xe0, 0x64, 0x03, 0x20, 0x04, 0xb0, 0x00, 0x00]);
             true
         }
-        // getSensorDpiParameters: 800 DPI now and by default, no independent Y
-        // axis (dpiY reads 0), lift-off distance MEDIUM.
+        // getSensorDpiParameters: the live DPI, 800 by default, no
+        // independent Y axis (dpiY reads 0), lift-off distance MEDIUM.
         (0x05, 0x05) => {
-            payload[1..3].copy_from_slice(&800u16.to_be_bytes());
+            payload[1..3].copy_from_slice(&dpi_x.lock().unwrap().to_be_bytes());
             payload[3..5].copy_from_slice(&800u16.to_be_bytes());
             payload[9] = u8::from(Lod::Medium);
             true
         }
-        // setSensorDpiParameters: echo the request back.
+        // setSensorDpiParameters: apply dpiX and echo the request back.
         (0x05, 0x06) => {
+            *dpi_x.lock().unwrap() = u16::from_be_bytes([request[5], request[6]]);
             payload[..6].copy_from_slice(&request[4..10]);
             true
         }
@@ -646,18 +662,28 @@ fn adjustable_dpi_drowsy_response(
     let feature_index = request[2];
     let function = request[3] >> 4;
     let mut payload = [0u8; 16];
-    match (feature_index, function) {
+    let long = match (feature_index, function) {
         // Root ping used by Device::new.
-        (0x00, 0x01) => payload[0] = 4,
+        (0x00, 0x01) => {
+            payload[0] = 4;
+            false
+        }
         // Root feature lookup: only 0x2201 present.
         (0x00, 0x00) => {
             let feature_id = u16::from_be_bytes([request[4], request[5]]);
             payload[0] = u8::from(feature_id == 0x2201) * 0x04;
+            false
+        }
+        // getSensorDpiList: the echoed sensor index, then 650 and 1000.
+        (0x04, 0x01) => {
+            payload[..7].copy_from_slice(&[request[4], 0x02, 0x8a, 0x03, 0xe8, 0x00, 0x00]);
+            true
         }
         // getSensorDpi: the echoed sensor index, then the live value.
         (0x04, 0x02) => {
             payload[0] = request[4];
             payload[1..3].copy_from_slice(&state.lock().unwrap().current.to_be_bytes());
+            false
         }
         // setSensorDpi: always ACKed, but the first write changes nothing.
         (0x04, 0x03) => {
@@ -667,14 +693,16 @@ fn adjustable_dpi_drowsy_response(
                 state.current = u16::from_be_bytes([request[5], request[6]]);
             }
             payload[..3].copy_from_slice(&request[4..7]);
+            false
         }
         _ => return None,
-    }
+    };
 
-    let mut response = vec![0u8; 7];
-    response[0] = 0x10;
+    let mut response = vec![0u8; if long { 20 } else { 7 }];
+    response[0] = if long { 0x11 } else { 0x10 };
     response[1..4].copy_from_slice(&request[1..4]);
-    response[4..].copy_from_slice(&payload[..3]);
+    let payload_len = response.len() - 4;
+    response[4..].copy_from_slice(&payload[..payload_len]);
     Some(response)
 }
 
