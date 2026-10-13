@@ -31,6 +31,23 @@ able to take it until a power cycle.
   of `openlogi diag lighting`, so only the agent's exit consumes the leases.
 - **Lighting off is not a release.** It writes black under the same control;
   releasing there would light the onboard effect instead.
+- **The exit waits for writes already running.** It refuses new lighting
+  writes first, then gives running ones a bounded wait to record their
+  leases, so a first write that claims while the agent quits is still handed
+  back. A write still running at the deadline keeps its control, and the
+  exit logs it.
+- **A lease belongs to one device.** It is bound to the connection the claim
+  went through and released only through that connection while inventory
+  still publishes it, which covers a replug. A receiver slot keeps the
+  receiver's connection when another device is paired into it, so every
+  write also records the unit ID the device reports (`0x0003`), including
+  one that finds control already held: the replacement may be held by this
+  session's earlier claim or by another host. A write with another unit ID
+  replaces the lease, and the release re-reads the unit ID and leaves a
+  different device alone. Inventory snapshots do not void leases: they trail
+  the channel a write goes through, so dropping a route's lease when a
+  snapshot shows its device gone could erase a claim already taken on the
+  replacement. A device without `0x0003` is identified by having none.
 - **`0x8081` per-key frames go under the same claim.** While the firmware
   owns a cluster it draws its own effect over host frames. On a device with an
   `0x8071` engine a per-key write therefore claims (with rollback), sets
