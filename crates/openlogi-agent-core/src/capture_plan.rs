@@ -65,12 +65,14 @@ pub struct DispatchPlan {
     /// This device's effective thumb-wheel sensitivity (device override or the
     /// app-wide default).
     pub thumbwheel_sensitivity: ThumbwheelSensitivity,
-    /// Whether this device's wheel scrolls inverted, so a wheel-hold button's
-    /// horizontal scroll follows it as Logi Options+ does. Read from the
+    /// Whether this device's wheel scrolls inverted, so the scrolling the
+    /// agent posts for it — a wheel-hold button's horizontal scroll, and the
+    /// diverted smooth wheel, whose native invert bit has no effect — follows
+    /// it as Logi Options+ does. Read from the
     /// inversion source the main wheel uses on the device's current link,
     /// which [`plan_for_device`] cannot see: the orchestrator fills it in,
     /// as it does [`Self::pointer_target`].
-    pub invert_held_wheel: bool,
+    pub invert_wheel: bool,
     /// Pointer identity used to select these mouse bindings; absent for the
     /// explicitly focused policy and keyboard input.
     pub pointer_target: Option<openlogi_hook::PointerTarget>,
@@ -162,6 +164,15 @@ impl CapturePublication {
     #[must_use]
     pub(crate) fn restore_route(&self, key: &PhysicalDeviceKey) -> Option<&DeviceRoute> {
         self.routes.get(key)
+    }
+
+    /// Whether a plan here hands the main wheel at `route` to its capture
+    /// session, which then owns that wheel's reporting mode.
+    #[must_use]
+    pub(crate) fn diverts_main_wheel(&self, route: &DeviceRoute) -> bool {
+        self.plans
+            .iter()
+            .any(|plan| plan.target.route == *route && plan.target.spec.divert_main_wheel.is_some())
     }
 }
 
@@ -304,6 +315,9 @@ pub fn plan_for_device(
                 divert_gesture_buttons,
                 divert_buttons,
                 divert_wheel_buttons,
+                // Needs the device's wheel capabilities and the settings of
+                // its current link, so the orchestrator fills it in.
+                divert_main_wheel: None,
             },
             rearm_generation,
         },
@@ -313,7 +327,7 @@ pub fn plan_for_device(
             gesture_bindings,
             side_gesture_bindings,
             thumbwheel_sensitivity,
-            invert_held_wheel: false,
+            invert_wheel: false,
             pointer_target: None,
         },
     }
@@ -331,6 +345,28 @@ mod tests {
             receiver_uid: "cafe".into(),
             slot: 2,
         }
+    }
+
+    /// Only a plan that hands its main wheel to capture marks that wheel as
+    /// owned, and only for its own route.
+    #[test]
+    fn a_publication_diverts_only_the_wheel_its_plan_hands_to_capture() {
+        let other = DeviceRoute::Bolt {
+            receiver_uid: "cafe".into(),
+            slot: 3,
+        };
+        let mut plan = plan_for_device(&Config::default(), "mouse", route(), None, 0, true);
+        plan.target.spec.divert_main_wheel =
+            Some(openlogi_hid::session::gesture::MainWheelDivert::default());
+        let diverting = CapturePublication::from_plans(vec![plan.clone()]);
+        assert!(diverting.diverts_main_wheel(&route()));
+        assert!(
+            !diverting.diverts_main_wheel(&other),
+            "another device's wheel stays native"
+        );
+        plan.target.spec.divert_main_wheel = None;
+        assert!(!CapturePublication::from_plans(vec![plan]).diverts_main_wheel(&route()));
+        assert!(!CapturePublication::default().diverts_main_wheel(&route()));
     }
 
     fn plan_for_device(
