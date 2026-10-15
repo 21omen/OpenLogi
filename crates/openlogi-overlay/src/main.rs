@@ -30,7 +30,9 @@ use openlogi_core::action_ring::DISPLAY_LIFETIME;
 use crate::ipc::OverlayCommand;
 use crate::platform::RingPlacement;
 use crate::ring::RingView;
-use crate::session::{ClickAwaySession, claim_the_role, spawn_click_away_dismissal};
+use crate::session::{
+    ClickAwaySession, claim_the_role, close_ring_windows, spawn_click_away_dismissal,
+};
 
 fn main() -> Result<()> {
     openlogi_core::logging::init_stderr();
@@ -74,7 +76,14 @@ fn main() -> Result<()> {
                     for handle in cx.windows() {
                         let _ = handle.update(cx, |_, window, _| window.remove_window());
                     }
-                    let placement = match RingPlacement::capture(cx) {
+                    #[cfg_attr(
+                        windows,
+                        expect(
+                            unused_mut,
+                            reason = "only the Wayland placement drains its openings"
+                        )
+                    )]
+                    let mut placement = match RingPlacement::capture(cx) {
                         Ok(placement) => placement,
                         Err(error) => {
                             warn!(%error, "could not locate Actions Ring display");
@@ -87,40 +96,48 @@ fn main() -> Result<()> {
                     let commands = commands.clone();
                     let timeout_commands = commands.clone();
                     let session_id = invocation.session_id;
-                    match cx.open_window(placement.window_options(), |_, cx| {
-                        cx.new(|_| RingView::new(invocation, commands, &live_session))
-                    }) {
-                        Ok(handle) => {
-                            if let Err(error) = handle
-                                .update(cx, |_, window, cx| {
-                                    // Native placement resizes the window inside this
-                                    // update, where GPUI's own resize/move callbacks
-                                    // cannot borrow the app. Resync its viewport and
-                                    // scale, or it keeps rendering at the bootstrap size.
-                                    placement.show(window).map(|()| window.bounds_changed(cx))
-                                })
-                                .and_then(std::convert::identity)
-                            {
-                                warn!(%error, "could not position Actions Ring window");
-                                let _ = handle.update(cx, |_, window, _| window.remove_window());
-                                let _ =
-                                    timeout_commands.send(OverlayCommand::Cancel { session_id });
-                                return;
-                            }
-                            cx.spawn(async move |cx| {
-                                cx.background_executor().timer(DISPLAY_LIFETIME).await;
-                                if handle
-                                    .update(cx, |_, window, _| window.remove_window())
-                                    .is_ok()
-                                {
-                                    let _ = timeout_commands
-                                        .send(OverlayCommand::Cancel { session_id });
+                    // Wayland opens one window per display. One that fails to
+                    // open must not sink the others.
+                    let mut primary = None;
+                    for (options, panel) in placement.openings() {
+                        let invocation = invocation.clone();
+                        let commands = commands.clone();
+                        match cx.open_window(options, |_, cx| {
+                            cx.new(|_| RingView::new(invocation, commands, &live_session, panel))
+                        }) {
+                            Ok(handle) => {
+                                if primary.is_none() {
+                                    primary = Some(handle);
                                 }
-                            })
-                            .detach();
+                            }
+                            Err(error) => warn!(%error, "could not open Actions Ring window"),
                         }
-                        Err(error) => warn!(%error, "could not open Actions Ring window"),
                     }
+                    let Some(primary) = primary else {
+                        return;
+                    };
+                    if let Err(error) = primary
+                        .update(cx, |_, window, cx| {
+                            // Native placement resizes the window inside this
+                            // update, where GPUI's own resize/move callbacks
+                            // cannot borrow the app. Resync its viewport and
+                            // scale, or it keeps rendering at the bootstrap size.
+                            placement.show(window).map(|()| window.bounds_changed(cx))
+                        })
+                        .and_then(std::convert::identity)
+                    {
+                        warn!(%error, "could not position Actions Ring window");
+                        close_ring_windows(cx, session_id);
+                        let _ = timeout_commands.send(OverlayCommand::Cancel { session_id });
+                        return;
+                    }
+                    cx.spawn(async move |cx| {
+                        cx.background_executor().timer(DISPLAY_LIFETIME).await;
+                        if cx.update(|cx| close_ring_windows(cx, session_id)) {
+                            let _ = timeout_commands.send(OverlayCommand::Cancel { session_id });
+                        }
+                    })
+                    .detach();
                 });
             }
         })
