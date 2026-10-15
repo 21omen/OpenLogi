@@ -14,7 +14,17 @@ use super::restore::{PendingRestore, RestoreOutcome, RestorePlan, SessionFailure
 use crate::backend::BackendError;
 use crate::reprog_controls::{self, ReprogControlsV4};
 use crate::thumbwheel::{self, Thumbwheel, ThumbwheelStatus, WheelDirection};
-use crate::{ChannelRegistry, IoSuspended, SharedChannel};
+use crate::{ChannelRegistry, DeviceRoute, IoSuspended, SharedChannel};
+
+/// Why a capture manager is stopping an active session.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CaptureSessionStop {
+    /// Capture is no longer wanted, or its controls changed on the same route.
+    Shutdown,
+    /// The same physical device moved to another route. Restore through that
+    /// route before a successor arms.
+    Handoff(DeviceRoute),
+}
 
 /// Shared slot holding the active capture session's open channel, so bounded
 /// hardware writes can reuse it instead of opening a second connection.
@@ -131,12 +141,15 @@ impl ThumbwheelRestore {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum CaptureStop {
     /// The owner deliberately requested teardown.
     Shutdown,
     /// Inventory removed or replaced the channel that armed capture.
     ChannelChanged,
+    /// The same physical device moved. Restore through the successor route
+    /// instead of the transport it left.
+    Handoff(DeviceRoute),
 }
 
 /// What a capture session writes to hand its controls back: every diverted
@@ -198,6 +211,18 @@ pub type CaptureSessionOutcome = RestoreOutcome<CaptureRestorePlan>;
 pub type CaptureSessionFailure = SessionFailure<CaptureError, CaptureRestorePlan>;
 
 impl PendingCaptureRestore {
+    /// Token aimed at `route` whose retry writes nothing and completes once that route is current.
+    #[must_use]
+    pub fn detached(route: DeviceRoute) -> Self {
+        Self::without_channel(
+            route,
+            CaptureRestorePlan {
+                reprog: None,
+                thumb: None,
+            },
+        )
+    }
+
     /// The restore owed for `reprog` and the thumb wheel, or `None` when the
     /// session diverted nothing.
     pub(crate) fn new(
@@ -224,6 +249,7 @@ pub(crate) async fn restore_after_stop(
     match stop {
         CaptureStop::Shutdown => pending.allow_current_channel().retry(registry).await,
         CaptureStop::ChannelChanged => pending.retry(registry).await,
+        CaptureStop::Handoff(route) => pending.retry_via(route, registry).await,
     }
 }
 
