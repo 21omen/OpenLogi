@@ -138,7 +138,6 @@ host_rename_failed = "Kanavan %{channel} tietokonetta ei voitu nimetä uudelleen
 connection = "Yhteys"
 slot = "Paikka"
 receiver_slot_number = "Paikka %{number}"
-channel = "Kanava"
 device_key = "Laiteavain"
 serial = "Sarjanumero"
 connected = "Yhdistetty"

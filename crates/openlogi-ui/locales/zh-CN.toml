@@ -138,7 +138,6 @@ host_rename_failed = "无法重命名通道 %{channel} 上的电脑，请重试�
 connection = "连接"
 slot = "槽位"
 receiver_slot_number = "槽位 %{number}"
-channel = "通道"
 device_key = "设备键"
 serial = "序列号"
 connected = "已连接"

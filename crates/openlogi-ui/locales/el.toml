@@ -138,7 +138,6 @@ host_rename_failed = "Δεν ήταν δυνατή η μετονομασία τ�
 connection = "Σύνδεση"
 slot = "Θέση"
 receiver_slot_number = "Θέση %{number}"
-channel = "Κανάλι"
 device_key = "Κλειδί συσκευής"
 serial = "Σειριακός αριθμός"
 connected = "Συνδεδεμένη"

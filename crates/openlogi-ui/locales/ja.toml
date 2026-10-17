@@ -138,7 +138,6 @@ host_rename_failed = "チャンネル %{channel} のコンピューター名を�
 connection = "接続"
 slot = "スロット"
 receiver_slot_number = "スロット %{number}"
-channel = "チャンネル"
 device_key = "デバイスキー"
 serial = "シリアル"
 connected = "接続済み"

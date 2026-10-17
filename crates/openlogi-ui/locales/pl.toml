@@ -138,7 +138,6 @@ host_rename_failed = "Nie udało się zmienić nazwy komputera na kanale %{chann
 connection = "Połączenie"
 slot = "Slot"
 receiver_slot_number = "Slot %{number}"
-channel = "Kanał"
 device_key = "Klucz urządzenia"
 serial = "Numer seryjny"
 connected = "Połączono"

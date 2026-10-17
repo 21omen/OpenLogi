@@ -34,7 +34,8 @@ use openlogi_ipc::PairingFailure;
 use super::AppView;
 use super::status::{loading_body, notice_body};
 use super::widgets::{
-    add_device_button, connectivity_dot, kind_label, route_label, settings_button,
+    add_device_button, connection_summary, connectivity_dot, kind_label, receiver_slot_label,
+    settings_button,
 };
 use crate::features::lighting::visual as light_visual;
 use crate::services::assets::GlowGeometry;
@@ -297,10 +298,15 @@ fn transport_glance(
         connection_summary(record)
     )
     .into();
-    div()
+    h_flex()
         .id((ElementId::from("transport-glance"), record.record_key()))
         .flex_none()
+        .items_center()
+        .gap_1()
         .child(svg().path(path).size_4().flex_none().text_color(color))
+        .when_some(receiver_slot_label(record), |glance, slot| {
+            glance.child(div().text_caption().text_color(pal.text_muted).child(slot))
+        })
         .tooltip(move |window, cx| Tooltip::new(hint.clone()).build(window, cx))
 }
 
@@ -538,18 +544,6 @@ fn connection_view(
                 .flex_none(),
         )
         .child(div().min_w_0().truncate().child(connection_summary(record)))
-}
-
-fn connection_summary(record: &DeviceRecord) -> String {
-    let route = route_label(record.route.as_ref());
-    if matches!(
-        record.route,
-        Some(DeviceRoute::Bolt { .. } | DeviceRoute::Unifying { .. })
-    ) {
-        format!("{route} · {} {}", tr!("device.channel"), record.slot)
-    } else {
-        route
-    }
 }
 
 /// The device photo, scaled to fit its container (object-fit contain), or a

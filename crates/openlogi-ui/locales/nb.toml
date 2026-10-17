@@ -138,7 +138,6 @@ host_rename_failed = "Kunne ikke gi datamaskinen på kanal %{channel} nytt navn.
 connection = "Tilkobling"
 slot = "Plass"
 receiver_slot_number = "Plass %{number}"
-channel = "Kanal"
 device_key = "Enhetsnøkkel"
 serial = "Serienummer"
 connected = "Tilkoblet"

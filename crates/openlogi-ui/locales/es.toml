@@ -138,7 +138,6 @@ host_rename_failed = "No se pudo cambiar el nombre del equipo del canal %{channe
 connection = "Conexión"
 slot = "Ranura"
 receiver_slot_number = "Ranura %{number}"
-channel = "Canal"
 device_key = "Clave del dispositivo"
 serial = "Número de serie"
 connected = "Conectado"

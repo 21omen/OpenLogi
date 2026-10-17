@@ -138,7 +138,6 @@ host_rename_failed = "Impossible de renommer l’ordinateur du canal %{channel}.
 connection = "Connexion"
 slot = "Emplacement"
 receiver_slot_number = "Emplacement %{number}"
-channel = "Canal"
 device_key = "Clé d’appareil"
 serial = "Numéro de série"
 connected = "Connecté"

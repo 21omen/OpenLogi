@@ -138,7 +138,6 @@ host_rename_failed = "De naam van de computer op kanaal %{channel} kan niet word
 connection = "Verbinding"
 slot = "Sleuf"
 receiver_slot_number = "Sleuf %{number}"
-channel = "Kanaal"
 device_key = "Apparaatsleutel"
 serial = "Serienummer"
 connected = "Verbonden"

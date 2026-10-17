@@ -138,7 +138,6 @@ host_rename_failed = "Computeren på kanal %{channel} kunne ikke omdøbes. Prøv
 connection = "Forbindelse"
 slot = "Plads"
 receiver_slot_number = "Plads %{number}"
-channel = "Kanal"
 device_key = "Enhedsnøgle"
 serial = "Serienummer"
 connected = "Tilsluttet"

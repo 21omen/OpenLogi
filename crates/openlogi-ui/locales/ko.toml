@@ -138,7 +138,6 @@ host_rename_failed = "채널 %{channel}의 컴퓨터 이름을 변경하지 못�
 connection = "연결"
 slot = "슬롯"
 receiver_slot_number = "슬롯 %{number}"
-channel = "채널"
 device_key = "기기 키"
 serial = "일련번호"
 connected = "연결됨"

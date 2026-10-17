@@ -138,7 +138,6 @@ host_rename_failed = "Не ўдалося перайменаваць камп'ю
 connection = "Падключэнне"
 slot = "Слот"
 receiver_slot_number = "Слот %{number}"
-channel = "Канал"
 device_key = "Ключ прылады"
 serial = "Серыйны нумар"
 connected = "Падключана"

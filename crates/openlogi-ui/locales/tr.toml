@@ -138,7 +138,6 @@ host_rename_failed = "%{channel}. kanaldaki bilgisayar yeniden adlandırılamad�
 connection = "Bağlantı"
 slot = "Yuva"
 receiver_slot_number = "Yuva %{number}"
-channel = "Kanal"
 device_key = "Cihaz anahtarı"
 serial = "Seri numarası"
 connected = "Bağlı"

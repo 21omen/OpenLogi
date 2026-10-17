@@ -138,7 +138,6 @@ host_rename_failed = "Kunde inte byta namn på datorn på kanal %{channel}. För
 connection = "Anslutning"
 slot = "Plats"
 receiver_slot_number = "Plats %{number}"
-channel = "Kanal"
 device_key = "Enhetsnyckel"
 serial = "Serienummer"
 connected = "Ansluten"
