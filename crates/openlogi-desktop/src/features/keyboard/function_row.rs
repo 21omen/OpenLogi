@@ -775,6 +775,10 @@ fn callout_lane_is_lower(idx: usize) -> bool {
     idx.is_multiple_of(2)
 }
 
+fn binding_after_pick(current: Option<&Action>, picked: Action) -> Option<Action> {
+    (current != Some(&picked)).then_some(picked)
+}
+
 /// The scrollable config panel for the selected key. Lists the same action
 /// catalog the mouse picker uses, plus a Power User section. Renders the rows
 /// directly (no popover) in a tall card.
@@ -817,9 +821,14 @@ impl FunctionRowView {
 
         let view_for_pick = view.clone();
         let target_for_pick = target.clone();
+        let current_for_pick = current.clone();
         let on_pick: PickFn = Rc::new(move |action, _window, cx| {
             AppState::apply(cx, |state| {
-                commit_key_action(state, &target_for_pick, Some(action))
+                commit_key_action(
+                    state,
+                    &target_for_pick,
+                    binding_after_pick(current_for_pick.as_ref(), action),
+                )
             });
             view_for_pick.update(cx, |_, vcx| vcx.notify());
         });
