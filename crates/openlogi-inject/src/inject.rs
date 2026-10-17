@@ -277,11 +277,16 @@ fn run_workflow(steps: &[WorkflowStep]) {
 /// is not a hard wall-clock limit on `execute`.
 ///
 /// On Linux, key and scroll events are injected via a lazily-created `uinput`
-/// virtual device. Mouse clicks inject `BTN_*` events. macOS-only window
-/// manager actions (`MissionControl`, `AppExpose`, `ShowDesktop`,
-/// `LaunchpadShow`) have no universal Linux equivalent and are silently
-/// skipped (debug-logged). `CustomShortcut` maps macOS `kVK_*` codes to
-/// Linux key codes; macOS Cmd maps to Ctrl.
+/// virtual device. Mouse clicks inject `BTN_*` events. When
+/// `HYPRLAND_INSTANCE_SIGNATURE` is non-empty, `LaunchpadShow` runs
+/// `omarchy-menu toggle`, desktop switches run `hyprctl dispatch workspace`,
+/// and `LockScreen` runs `omarchy-system-lock` when available (never Super+L;
+/// the fallback is Super+Ctrl+L). Helpers run asynchronously with a bounded
+/// wait, then fall back to their compositor shortcut. Otherwise macOS-only
+/// window manager actions (`MissionControl`, `AppExpose`, `ShowDesktop`,
+/// `LaunchpadShow`) have no universal Linux equivalent and are silently skipped
+/// (debug-logged). `CustomShortcut` maps macOS `kVK_*` codes to Linux key codes;
+/// macOS Cmd maps to Ctrl.
 ///
 /// On Windows, key and mouse events are synthesised via `SendInput`. The
 /// macOS window-manager actions map to their Windows equivalents (e.g.
