@@ -210,6 +210,7 @@ fn the_pointer_tab_offers_the_smooth_wheel(cx: &mut gpui::TestAppContext) {
                 agent_version: "smooth-wheel-test".to_string(),
                 input_monitoring_granted: true,
                 hid_open_failures: false,
+                secure_input: openlogi_ipc::SecureInput::Off,
             }));
             state
         });
@@ -1239,4 +1240,186 @@ fn receiver_slot_is_named_only_for_receiver_routes() {
     direct.slot = 0xff;
     assert_eq!(receiver_slot_label(&direct), None);
     assert_eq!(connection_summary(&direct), "Direct connection");
+}
+
+/// A healthy status — hook live — with `secure_input` as given.
+fn status_with(secure_input: openlogi_ipc::SecureInput) -> openlogi_ipc::AgentStatus {
+    openlogi_ipc::AgentStatus {
+        accessibility_granted: true,
+        hook_installed: true,
+        launch_at_login: false,
+        inventory: openlogi_ipc::InventoryHealth::Ready,
+        protocol_version: openlogi_ipc::PROTOCOL_VERSION,
+        agent_version: "secure-input-test".to_string(),
+        input_monitoring_granted: true,
+        hid_open_failures: false,
+        secure_input,
+    }
+}
+
+fn terminal_holds_secure_input() -> openlogi_ipc::SecureInput {
+    openlogi_ipc::SecureInput::On(Some(openlogi_core::app::ForegroundApp {
+        id: "com.apple.Terminal".to_string(),
+        display_name: "Terminal".to_string(),
+    }))
+}
+
+#[test]
+fn secure_input_needs_attention_only_while_it_pauses_a_key_binding() {
+    use super::status::Attention;
+    use openlogi_ipc::SecureInput;
+
+    assert_eq!(
+        Attention::for_status(&status_with(terminal_holds_secure_input()), true),
+        Some(Attention::SecureInput(Some("Terminal".into())))
+    );
+    assert_eq!(
+        Attention::for_status(&status_with(SecureInput::On(None)), true),
+        Some(Attention::SecureInput(None)),
+        "an unnamed holder still pauses the bindings"
+    );
+    assert_eq!(
+        Attention::for_status(&status_with(terminal_holds_secure_input()), false),
+        None,
+        "with no OS-hook key binding, Secure Input pauses nothing"
+    );
+    assert_eq!(
+        Attention::for_status(&status_with(SecureInput::Off), true),
+        None
+    );
+
+    let mut unhooked = status_with(terminal_holds_secure_input());
+    unhooked.hook_installed = false;
+    assert_eq!(
+        Attention::for_status(&unhooked, true),
+        None,
+        "without the hook no binding fires anyway"
+    );
+
+    let mut untrusted = status_with(terminal_holds_secure_input());
+    untrusted.accessibility_granted = false;
+    assert_eq!(
+        Attention::for_status(&untrusted, true),
+        Some(Attention::Accessibility),
+        "the missing grant comes first"
+    );
+}
+
+/// Open the main window with Terminal holding Secure Input, F1 bound when
+/// `bind_a_key`, and return its root view.
+fn open_main_window_with_secure_input(
+    cx: &mut gpui::TestAppContext,
+    bind_a_key: bool,
+) -> (gpui::Entity<super::AppView>, &mut gpui::VisualTestContext) {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use gpui::AppContext as _;
+    use gpui_component::Root;
+    use openlogi_core::binding::Action;
+
+    use super::AppView;
+    use crate::services::assets::AssetResolver;
+    use crate::state::{AgentLink, AppState, Sources};
+
+    rust_i18n::set_locale("en");
+    cx.update(gpui_component::init);
+    cx.update(|cx| {
+        let (commands, _receiver) = tokio::sync::mpsc::unbounded_channel();
+        let resolver = AssetResolver::new();
+        let mut config = openlogi_core::config::Config::ephemeral();
+        if bind_a_key {
+            config.keyboard.bindings.insert(f1(), Action::VolumeUp);
+        }
+        let state = cx.new(|_| {
+            let mut state = AppState::new(Sources::in_memory(config, &resolver, commands));
+            let _ =
+                state.set_agent_link(AgentLink::Ready(status_with(terminal_holds_secure_input())));
+            state
+        });
+        AppState::set_global(state, cx);
+    });
+    let root_view = Rc::new(RefCell::new(None));
+    let slot = Rc::clone(&root_view);
+    let (_, cx) = cx.add_window_view(move |window, cx| {
+        let view = cx.new(|cx| AppView::new(window, cx));
+        *slot.borrow_mut() = Some(view.clone());
+        Root::new(view, window, cx)
+    });
+    let view = root_view
+        .borrow_mut()
+        .take()
+        .expect("the window built its root view");
+    (view, cx)
+}
+
+fn f1() -> openlogi_core::config::KeyTrigger {
+    "f1".parse().expect("parse key trigger")
+}
+
+/// Draw a frame and report whether the attention bar names Secure Input.
+fn secure_input_notice_drawn(cx: &mut gpui::VisualTestContext) -> bool {
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    cx.debug_bounds("secure-input-notice").is_some()
+}
+
+#[gpui::test]
+fn the_main_window_shows_secure_input_while_a_key_is_bound(cx: &mut gpui::TestAppContext) {
+    let _locale = crate::services::i18n::LOCALE_LOCK.lock().unwrap();
+    let (_view, cx) = open_main_window_with_secure_input(cx, true);
+    assert!(secure_input_notice_drawn(cx));
+}
+
+#[gpui::test]
+fn the_main_window_hides_secure_input_with_no_key_bound(cx: &mut gpui::TestAppContext) {
+    let _locale = crate::services::i18n::LOCALE_LOCK.lock().unwrap();
+    let (_view, cx) = open_main_window_with_secure_input(cx, false);
+    assert!(!secure_input_notice_drawn(cx));
+}
+
+/// The Keys tab's own view repaints only itself, so binding the first key or
+/// clearing the last one must also repaint the root view for the bar to
+/// follow while Secure Input stays on.
+#[gpui::test]
+fn a_key_binding_edit_repaints_the_secure_input_notice(cx: &mut gpui::TestAppContext) {
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    use openlogi_core::binding::Action;
+
+    use crate::state::{AppState, DeviceKey, StateEvent};
+
+    let _locale = crate::services::i18n::LOCALE_LOCK.lock().unwrap();
+    let (view, cx) = open_main_window_with_secure_input(cx, false);
+    assert!(!secure_input_notice_drawn(cx));
+    let repainted = Rc::new(Cell::new(false));
+    let _watch = cx.update(|_, cx| {
+        let repainted = Rc::clone(&repainted);
+        cx.observe(&view, move |_, _| repainted.set(true))
+    });
+    // What the Keys tab does: commit the binding and report the change
+    // against the device on screen.
+    let edit_f1 = |cx: &mut gpui::VisualTestContext, action: Option<Action>| {
+        cx.update(|_, cx| {
+            AppState::apply(cx, |state| {
+                let _ = state.commit_keyboard_binding(f1(), action);
+                StateEvent::BindingsChanged(DeviceKey::from("unit:00000001")).into()
+            });
+        });
+        cx.run_until_parked();
+    };
+
+    edit_f1(cx, Some(Action::VolumeUp));
+    assert!(
+        repainted.replace(false),
+        "binding the first key repaints the window"
+    );
+    assert!(secure_input_notice_drawn(cx));
+
+    edit_f1(cx, None);
+    assert!(
+        repainted.replace(false),
+        "clearing the last key repaints the window"
+    );
+    assert!(!secure_input_notice_drawn(cx));
 }
