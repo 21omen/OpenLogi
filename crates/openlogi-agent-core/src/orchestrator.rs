@@ -12,7 +12,7 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
 
 use openlogi_core::app::ForegroundApp;
 use openlogi_core::binding::{Binding, ButtonId};
@@ -65,11 +65,13 @@ pub use lights::{ConfigSource, LightWriteClaim, TakenLightChange, write_light};
 #[cfg(test)]
 use devices::reapply_targets;
 use devices::{
-    RECONNECT_REAPPLY_CONFIRM_RETRIES, VOLATILE_REAPPLY_CONFIRM_RETRIES,
-    any_device_needs_capture_rearm, assignments_changed, build_devices, config_keeps_os_layout,
-    configured_pointer_speed, configured_report_rate, configured_wheel_mode, host_switch_links,
-    is_hidpp_device, keeps_os_layout, main_wheel_divert, newly_kept_os_layouts, os_layout_appeared,
-    pick_current, plan_reapply, scales_pointer, settings_moved, stable_id, wheel_inverted,
+    FollowerCookieState, FollowerCookieWrite, RECONNECT_REAPPLY_CONFIRM_RETRIES,
+    VOLATILE_REAPPLY_CONFIRM_RETRIES, any_device_needs_capture_rearm, assignments_changed,
+    build_devices, changed_follower_cookies, config_keeps_os_layout, configured_pointer_speed,
+    configured_report_rate, configured_wheel_mode, host_switch_links, is_hidpp_device,
+    keeps_os_layout, main_wheel_divert, newly_kept_os_layouts, os_layout_appeared, pick_current,
+    plan_reapply, reconnect_follower_cookies, scales_pointer, settings_moved, stable_id,
+    wheel_inverted,
 };
 
 /// The minimal per-device facts the agent needs: the config key (binding /
@@ -166,6 +168,8 @@ pub struct SharedHandles {
     backlight_order: WriteOrder,
     /// Orders host renames per device.
     host_name_order: WriteOrder,
+    /// Orders the `ChangeHost` cookie writes per linked device.
+    follower_cookie_order: WriteOrder,
     /// The running inventory watcher's refresh handle, published at arming;
     /// `None` while no watcher runs.
     inventory_refresh: Arc<RwLock<Option<InventoryRefresh>>>,
@@ -419,6 +423,10 @@ pub struct Orchestrator {
     /// layout writes queued for them so a write withdraws itself once a
     /// reload turns the setting off or disables the device.
     kept_os_layouts: Arc<KeptOsLayouts>,
+    /// The cookie clears that wait for their linked device to be online, and
+    /// the last cookie byte seen for each keyboard. Shared with the cookie
+    /// writes, which return a clear that does not finish.
+    follower_cookies: Arc<Mutex<FollowerCookieState>>,
     /// Whether the OS mouse hook is currently installed. Back/Forward gesture
     /// motion comes from HID++, but diversion is published only while the
     /// broader mouse-remapping path is available so losing the hook leaves the
@@ -506,6 +514,7 @@ impl Orchestrator {
             pointer_speeds: Arc::default(),
             backlight_order: WriteOrder::default(),
             host_name_order: WriteOrder::default(),
+            follower_cookie_order: WriteOrder::default(),
             inventory_refresh: Arc::new(RwLock::new(None)),
         };
         let orch = Self {
@@ -528,6 +537,7 @@ impl Orchestrator {
             light_writes: BTreeMap::new(),
             next_light_write: 0,
             kept_os_layouts: Arc::default(),
+            follower_cookies: Arc::default(),
             os_mouse_hook_available: false,
             capture_plans_tx,
             keyboard_spec_tx,
@@ -930,6 +940,9 @@ impl Orchestrator {
         self.publish_inventory();
         let devices = build_devices(&self.config, inventories, standalone);
         self.announce_low_batteries(&devices);
+        // Before any cookie plan below: a keyboard that goes to sleep or
+        // leaves later keeps its byte for the clears and links that name it.
+        self.follower_cookies().remember_leads(&devices);
         // Volatile settings (lighting colour, sensor DPI, SmartShift, native
         // wheel mode) live in device RAM and reset on a power cycle. Every
         // reconnect shape re-applies the persisted values (#189): a first
@@ -958,7 +971,7 @@ impl Orchestrator {
             }
         }
         for idx in targets {
-            self.reapply_volatile_settings(&devices[idx]);
+            self.reapply_volatile_settings(&devices[idx], &devices);
         }
         let changed = next_current != self.current
             || devices.len() != self.devices.len()
@@ -1084,7 +1097,12 @@ impl Orchestrator {
     /// thread and one HID++ channel so concurrent multi-open of the same
     /// receiver cannot cross-talk (#485); lighting stays a separate path
     /// (keyboards / different feature).
-    fn reapply_volatile_settings(&self, dev: &AgentDevice) {
+    ///
+    /// `devices` is the inventory that `dev` comes from. The cookie plan reads
+    /// it, not `self.devices`, which still holds the previous inventory while
+    /// [`Self::refresh_inventory`] runs: there `dev` and the keyboards that
+    /// came online with it would still look offline.
+    fn reapply_volatile_settings(&self, dev: &AgentDevice, devices: &[AgentDevice]) {
         // A disabled device is left fully native — no writes of any kind.
         if !self.config.device_enabled(&dev.config_key) {
             return;
@@ -1137,6 +1155,38 @@ impl Orchestrator {
                 .hardware
                 .set_light_in_background(Some(route), &light, capabilities);
         }
+        let writes =
+            reconnect_follower_cookies(&self.config, devices, dev, &mut self.follower_cookies());
+        self.write_follower_cookies(writes);
+    }
+
+    /// Write the `ChangeHost` cookies of linked pointing devices, so that Logi
+    /// Options+ on a keyboard's other hosts moves the same devices.
+    fn write_follower_cookies(&self, writes: Vec<FollowerCookieWrite>) {
+        for write in writes {
+            let state = Arc::clone(&self.follower_cookies);
+            let key = write.key;
+            crate::hardware::write_follower_cookies_in_background(
+                self.shared.device(&write.follower),
+                self.shared.follower_cookie_order.request(&write.follower),
+                write.release,
+                write.link,
+                move |leads| {
+                    state
+                        .lock()
+                        .unwrap_or_else(PoisonError::into_inner)
+                        .requeue(&key, leads);
+                },
+            );
+        }
+    }
+
+    /// The held cookie clears and the known keyboard bytes. A panic while the
+    /// state was held leaves at worst a clear too many or too few.
+    fn follower_cookies(&self) -> MutexGuard<'_, FollowerCookieState> {
+        self.follower_cookies
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
     }
 
     /// Put `dev`'s keyboard on the host OS's key layout when the config keeps
@@ -1501,6 +1551,13 @@ impl Orchestrator {
         self.apply_changed_fn_locks(&previous);
         self.apply_changed_pointer_speeds(&previous);
         self.apply_enabled_os_layouts(&previous);
+        let writes = changed_follower_cookies(
+            &previous,
+            &self.config,
+            &self.devices,
+            &mut self.follower_cookies(),
+        );
+        self.write_follower_cookies(writes);
         self.changed_lights(&previous_lights)
     }
 
