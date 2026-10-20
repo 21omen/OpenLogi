@@ -9,6 +9,11 @@
 <p align="center"><strong>⚡️ Rust로 작성된 네이티브 로컬 우선 Logitech Options+ 대안 🦀<br/>HID++와 UVC로 Logitech 마우스·키보드·웹캠의 모든 기능을 끌어냅니다</strong></p>
 
 
+<p align="center">
+    <a href="https://trendshift.io/repositories/42303" target="_blank">
+    <img src="https://trendshift.io/api/badge/trendshift/repositories/42303/daily?language=Rust" alt="AprilNEA%2FOpenLogi | Trendshift" width="250" height="55"/></a>
+</p>
+
 <div align="center">
     <a href="https://twitter.com/AprilNEA" target="_blank">
     <img alt="twitter" src="https://img.shields.io/badge/follow-AprilNEA-green?style=social&logo=Twitter"></a>
@@ -43,11 +48,6 @@
     <a href="README.tr.md">
     <img alt="Türkçe" src="https://img.shields.io/badge/T%C3%BCrk%C3%A7e-lightgrey?style=flat"></a>
 </div>
-
-<p align="center">
-    <a href="https://trendshift.io/repositories/42303" target="_blank">
-    <img src="https://trendshift.io/api/badge/trendshift/repositories/42303/daily?language=Rust" alt="AprilNEA%2FOpenLogi | Trendshift" width="250" height="55"/></a>
-</p>
 
 > **Options+가 지긋지긋하다면? OpenLogi를 써 보세요.**
 

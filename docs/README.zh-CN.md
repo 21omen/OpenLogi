@@ -9,6 +9,11 @@
 <p align="center"><strong>⚡️ 本地优先的 Logitech Options+ 平替 <br/>通过 HID++ 与 UVC 协议解锁 Logitech 鼠标、键盘与摄像头的完整能力</strong></p>
 
 
+<p align="center">
+    <a href="https://trendshift.io/repositories/42303" target="_blank">
+    <img src="https://trendshift.io/api/badge/trendshift/repositories/42303/daily?language=Rust" alt="AprilNEA%2FOpenLogi | Trendshift" width="250" height="55"/></a>
+</p>
+
 <div align="center">
     <a href="https://twitter.com/AprilNEA" target="_blank">
     <img alt="twitter" src="https://img.shields.io/badge/follow-AprilNEA-green?style=social&logo=Twitter"></a>
@@ -43,11 +48,6 @@
     <a href="README.tr.md">
     <img alt="Türkçe" src="https://img.shields.io/badge/T%C3%BCrk%C3%A7e-lightgrey?style=flat"></a>
 </div>
-
-<p align="center">
-    <a href="https://trendshift.io/repositories/42303" target="_blank">
-    <img src="https://trendshift.io/api/badge/trendshift/repositories/42303/daily?language=Rust" alt="AprilNEA%2FOpenLogi | Trendshift" width="250" height="55"/></a>
-</p>
 
 > **被 Options+ 折腾够了？试试 OpenLogi。**
 
