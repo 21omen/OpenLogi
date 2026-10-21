@@ -16,6 +16,12 @@
 //! the mouse's saved speed or DPI or its button assignments. A DPI preset
 //! press ends it on a DPI mouse too.
 //!
+//! The DPI LED shows the mode on a mouse with a `0x1300` LED of type DPI, as
+//! in Logi Options+: every write that sets the precision speed lights it,
+//! and every write that ends the precision speed darkens it. The other
+//! writes leave the LED alone, so a mouse that never used precision mode
+//! keeps the LED behavior of its firmware.
+//!
 //! The mode lives in the agent process only. It survives a reconnect,
 //! because the reconnect reapply writes the precision speed while the mode is
 //! on. When the mode ends, by a press or a reload, online or offline, the
@@ -187,6 +193,22 @@ pub(crate) struct SpeedWrite {
     /// The pending restore this write settles once it lands, if any. Pass
     /// it to [`PointerSpeeds::restored`] then.
     pub(crate) restore: Option<Restore>,
+    /// What the mouse's DPI LED shows after this write: lit when the write
+    /// sets the precision speed, dark when it ends it. `None` leaves the LED
+    /// to the firmware, so a mouse that never used precision mode keeps its
+    /// own LED behavior.
+    pub(crate) led: Option<bool>,
+}
+
+/// A write of the settings app, numbered when it was requested.
+pub(crate) struct AppWrite {
+    /// Its place among the mouse's pointer-speed writes.
+    pub(crate) ticket: WriteTicket,
+    /// The restore the write settles once it lands, when it ends the
+    /// precision speed of the mouse: its mode was on, or a restore was owed.
+    /// The DPI LED goes dark with the write then. Until it lands, a newer
+    /// write that supersedes it carries the restore, and with it the LED.
+    pub(crate) restore: Option<Restore>,
 }
 
 /// A pending restore a reconnect write carries: the mouse's config key and
@@ -257,7 +279,7 @@ impl PointerSpeeds {
         } else {
             state.restore.remove(&key);
             state.precision.insert(key);
-            Some((true, self.write(route, saved.precision(), None)))
+            Some((true, self.precision_write(route, saved)))
         }
     }
 
@@ -279,7 +301,7 @@ impl PointerSpeeds {
     ) -> Option<SpeedWrite> {
         let state = self.lock();
         if state.precision.contains(key) {
-            return Some(self.write(route.clone(), saved.precision(), None));
+            return Some(self.precision_write(route.clone(), saved));
         }
         let Some(restore) = state.pending_restore(key) else {
             return saved
@@ -303,23 +325,32 @@ impl PointerSpeeds {
     /// `route`. Ends the precision mode of that mouse when `saved` is of its
     /// kind, makes `saved` the value precision mode returns to until the next
     /// reload, and numbers the write.
-    pub(crate) fn app_write(&self, route: &DeviceRoute, saved: SavedSpeed) -> WriteTicket {
+    ///
+    /// A mouse whose precision speed the write ends stays owed a restore
+    /// until a write lands, as after a press: a newer write that supersedes
+    /// this one then settles it and darkens the LED.
+    pub(crate) fn app_write(&self, route: &DeviceRoute, saved: SavedSpeed) -> AppWrite {
         let mut state = self.lock();
-        let State {
-            online,
-            precision,
-            restore,
-            ..
-        } = &mut *state;
-        for (key, mouse) in online
-            .iter_mut()
+        let keys: Vec<String> = state
+            .online
+            .iter()
             .filter(|(_, mouse)| mouse.route == *route && mouse.saved.same_kind(saved))
-        {
-            precision.remove(key);
-            restore.remove(key);
-            mouse.saved = saved;
+            .map(|(key, _)| key.clone())
+            .collect();
+        let mut restore = None;
+        for key in keys {
+            let was_on = state.precision.remove(&key);
+            if was_on || state.restore.contains_key(&key) {
+                restore = Some(state.owe_restore(&key));
+            }
+            if let Some(mouse) = state.online.get_mut(&key) {
+                mouse.saved = saved;
+            }
         }
-        self.order.request(route)
+        AppWrite {
+            ticket: self.order.request(route),
+            restore,
+        }
     }
 
     /// A DPI preset action writes `dpi` to the mouse at `route`. Ends the
@@ -409,6 +440,8 @@ impl PointerSpeeds {
         self.lock().precision.contains(key)
     }
 
+    /// A write of `target` that settles `restore`, if any. A write that
+    /// settles a restore ends the precision speed, so it darkens the LED.
     fn write(
         &self,
         route: DeviceRoute,
@@ -416,11 +449,26 @@ impl PointerSpeeds {
         restore: Option<Restore>,
     ) -> SpeedWrite {
         let ticket = self.order.request(&route);
+        let led = restore.as_ref().map(|_| false);
         SpeedWrite {
             route,
             target,
             ticket,
             restore,
+            led,
+        }
+    }
+
+    /// A write of the precision speed of a mouse with `saved`. It lights the
+    /// LED.
+    fn precision_write(&self, route: DeviceRoute, saved: SavedSpeed) -> SpeedWrite {
+        let ticket = self.order.request(&route);
+        SpeedWrite {
+            route,
+            target: saved.precision(),
+            ticket,
+            restore: None,
+            led: Some(true),
         }
     }
 
