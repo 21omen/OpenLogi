@@ -559,7 +559,8 @@ impl Running {
 
     async fn begin_action_ring(&self, device_key: Option<&str>) {
         // A second trigger press while the ring is showing closes it.
-        if self.inputs.ring.dismiss_active() {
+        if let Some(dismissed) = self.inputs.ring.dismiss_active() {
+            self.ring_haptics.end_session(dismissed);
             return;
         }
         if let Some(session) = self
@@ -568,10 +569,14 @@ impl Running {
             .await
             .action_ring_session(device_key)
         {
-            // Re-arm the firmware haptic engine first: power transitions can
-            // clear it, after which plays are accepted without feedback.
-            self.ring_haptics.arm(session.haptic_route.clone());
-            self.inputs.ring.begin(session);
+            let haptic_route = session.haptic_route.clone();
+            let invocation = self.inputs.ring.begin(session);
+            // Re-arm the firmware haptic engine before the first buzz: power
+            // transitions can clear it, after which plays are accepted
+            // without feedback. This still precedes every hover, because the
+            // overlay can only hover once it has observed the invocation.
+            self.ring_haptics
+                .begin_session(invocation.session_id, haptic_route);
         }
     }
 
@@ -653,6 +658,12 @@ impl Running {
                 self.shut_down("the app was uninstalled", None).await;
             }
             ShutdownRequest::Restart { path, retry } => {
+                // A replacement ends the ring session as an exit does, and
+                // the successor knows nothing of an enable this agent owes:
+                // hand it back while inventory still publishes the channels.
+                // No session arms until the agent stays, see
+                // `restart_hidpp_watchers`.
+                self.ring_haptics.finish().await;
                 self.hidpp_watchers
                     .begin_replacement(Replacement { path, retry });
             }
@@ -672,6 +683,9 @@ impl Running {
     }
 
     fn restart_hidpp_watchers(&mut self) {
+        // The agent stays — at startup, or after a replacement that did not
+        // happen — so ring sessions arm the haptic engine again.
+        self.ring_haptics.resume();
         self.hidpp_watchers =
             WatcherFleet::Running(startup::spawn_hidpp_watchers(&self.shared, &self.inputs));
     }
@@ -724,12 +738,18 @@ impl Running {
         self.leave(reason, None).await
     }
 
-    /// Drain the HID++ fleet, release the hook, and end the process.
+    /// Hand back the haptic enable an open Actions Ring session may owe,
+    /// drain the HID++ fleet, release the hook, and end the process.
+    ///
+    /// Leaving ends the ring session whether or not a successor follows, and
+    /// a successor knows nothing of the enable. The restore runs first, while
+    /// inventory still publishes the channels it needs.
     async fn leave(
         &mut self,
         reason: &str,
         tray_guard: Option<tokio::sync::oneshot::Sender<()>>,
     ) -> ! {
+        self.ring_haptics.finish().await;
         std::mem::replace(&mut self.hidpp_watchers, WatcherFleet::Inactive)
             .stop_for_exit()
             .await;
