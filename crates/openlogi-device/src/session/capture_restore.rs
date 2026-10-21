@@ -140,6 +140,41 @@ impl ArmedReporting {
             ReprogRestorePolicy::Keyboard => undivert_keyboard_key(self.original),
         }
     }
+
+    /// The `setCidReporting` change that diverts this control again the way
+    /// it was armed, given its `current` reporting, or `None` when `current`
+    /// still has every setting that arming wrote.
+    ///
+    /// The change leaves the remap alone (`remap: None`, which the device
+    /// reads as "keep the current remap"). Capture does not own the remap,
+    /// and another client may set it again between the read of `current` and
+    /// this write; writing the remap read in `current` would undo that. The
+    /// original state stays the one that teardown restores.
+    pub(crate) fn redivert_change(
+        self,
+        current: reprog_controls::CidReporting,
+    ) -> Option<reprog_controls::CidReportingChange> {
+        let change = reprog_controls::CidReportingChange {
+            remap: None,
+            ..self.divert_change()
+        };
+        (!holds(change, current)).then_some(change)
+    }
+}
+
+/// Whether `current` already has every flag that `change` writes. The remap
+/// is not compared: [`ArmedReporting::redivert_change`] does not write it.
+fn holds(
+    change: reprog_controls::CidReportingChange,
+    current: reprog_controls::CidReporting,
+) -> bool {
+    let holds = |wanted: Option<bool>, now: bool| wanted.is_none_or(|wanted| wanted == now);
+    holds(change.diverted, current.diverted)
+        && holds(change.persistently_diverted, current.persistently_diverted)
+        && holds(change.raw_xy, current.raw_xy)
+        && holds(change.force_raw_xy, current.force_raw_xy)
+        && holds(change.analytics_key_events, current.analytics_key_events)
+        && holds(change.raw_wheel, current.raw_wheel)
 }
 
 /// A non-empty set of `0x1b04` controls owned through one feature index.
