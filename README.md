@@ -79,54 +79,70 @@ Things OpenLogi does that Options+ won't:
 
 ## Features
 
-<table>
-    <tr>
-        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="420" alt="Device list with four Logitech mice and their connections"></td>
-        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/buttons-gestures.png" width="420" alt="Button mapping for an MX Master 4, with the gesture button inspector open"></td>
-    </tr>
-    <tr>
-        <td align="center"><b>Devices</b><br><sub>Every receiver and connection, with battery level</sub></td>
-        <td align="center"><b>Buttons and gestures</b><br><sub>Actions, shortcuts, and per-direction gestures</sub></td>
-    </tr>
-    <tr>
-        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/actions-ring.png" width="420" alt="Actions Ring editor with eight slots around the cursor"></td>
-        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/pointer-scrolling.png" width="420" alt="Pointer tab with DPI, SmartShift, and scrolling settings"></td>
-    </tr>
-    <tr>
-        <td align="center"><b>Actions Ring</b><br><sub>Eight actions around the cursor, per application</sub></td>
-        <td align="center"><b>Pointer and scrolling</b><br><sub>DPI, SmartShift, and wheel behavior</sub></td>
-    </tr>
-</table>
+<p align="center">
+    <img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="860" alt="OpenLogi device list with six Logitech devices: mice, a keyboard, and a Litra light">
+</p>
 
 ### Devices
 
 - Logi Bolt and Unifying receivers, Bluetooth, and wired connections, with battery level and charge state
 - Low-battery notices at the bottom of the screen, once per discharge, with no OS notification permission
 - An on-screen indicator when a keyboard turns Caps Lock on or off, plus Num Lock and Scroll Lock on Windows and Linux
-- Easy-Switch: see which computer is paired on each channel, with its OS and connection, and rename it on devices that allow it
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/easy-switch.png" width="400" alt="Easy-Switch card listing three paired computers"></td>
+        <td width="50%"><b>Easy-Switch</b><ul><li>See which computer is paired on each channel, with its OS and connection</li><li>Rename a channel on devices that allow it</li></ul></td>
+    </tr>
+</table>
 
 ### Buttons and actions
 
-- Remap mouse buttons and keyboard F-keys to a built-in action catalog, custom shortcuts, typed text, or multi-step workflows
-- Separate tap and hold actions, and hold-to-talk chords that release with the button
-- Gestures on supported buttons: Middle Click, Back/Forward, DPI/ModeShift, the gesture button, and the haptic panel
-- Actions Ring: an eight-slot overlay around the cursor, with its own layout per application
-- Per-application profiles that switch with the focused app; an `[apps]` alias lets one profile follow an application across platforms
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/buttons.png" width="400" alt="Button mapping for an MX Master 4, with the gesture button inspector open"></td>
+        <td width="50%"><b>Remap any button</b><ul><li>A built-in action catalog, custom shortcuts, typed text, or multi-step workflows</li><li>Separate tap and hold actions, and hold-to-talk chords that release with the button</li><li>Gestures on Middle Click, Back/Forward, DPI/ModeShift, the gesture button, and the haptic panel</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/actions-ring.png" width="400" alt="Actions Ring editor with eight slots around the cursor"></td>
+        <td width="50%"><b>Actions Ring</b><ul><li>Eight actions in a ring around the cursor</li><li>Its own layout per application</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys.png" width="400" alt="MX Keys S with three keys bound to Launchpad, Lock Screen, and Screenshot"></td>
+        <td width="50%"><b>Keyboard keys</b><ul><li>Bind media, emoji, screenshot, and other dedicated keys like mouse buttons</li><li>Restore one key to its device default, or reset the whole row</li></ul></td>
+    </tr>
+</table>
+
+Per-application profiles switch with the focused app. An `[apps]` alias lets one profile follow an application across platforms.
 
 ### Pointer and scrolling
 
-- DPI presets with cycle and set-preset actions, pointer speed, and report rate
-- Precision Mode: one button switches the mouse to its slowest speed and back
-- SmartShift: mode, sensitivity, and scrolling force on SmartShift Enhanced mice
-- Scroll inversion per device, natively or in software, plus smooth wheel scrolling
-- Hold Back or Forward and roll the wheel to scroll sideways on mice without a thumb wheel
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/dpi.png" width="400" alt="Pointer tuning card with a DPI slider"></td>
+        <td width="50%"><b>Pointer</b><ul><li>DPI presets with cycle and set-preset actions</li><li>Pointer speed and report rate</li><li>Precision Mode: one button switches the mouse to its slowest speed and back</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/smartshift.png" width="400" alt="SmartShift card with wheel mode, sensitivity, and scrolling force"></td>
+        <td width="50%"><b>SmartShift</b><ul><li>Wheel mode and sensitivity</li><li>Scrolling force on SmartShift Enhanced mice</li><li>A permanent-ratchet switch</li></ul></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/scrolling.png" width="820" alt="Scrolling card with inversion, wheel resolution, and smooth wheel"><br><b>Scrolling</b><ul><li>Scroll inversion per device, natively or in software</li><li>Wheel resolution and smooth wheel scrolling</li><li>Hold Back or Forward and roll the wheel to scroll sideways on mice without a thumb wheel</li></ul></td>
+    </tr>
+</table>
 
 ### Keyboard and lighting
 
-- Multi-platform keyboards stay on the host OS layout; restore one key to its device default, or reset the whole row
-- Keyboard backlight: level, automatic brightness, and battery saving, with an on-screen level indicator
-- Static RGB on supported keyboards
-- Litra lights: power, brightness, and color temperature; follows camera activity if you want, and keeps changes made on the light itself
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys-backlight.png" width="400" alt="Keys and Backlight cards for an MX Keys S"></td>
+        <td width="50%"><b>Keyboard</b><ul><li>Fn Lock, and multi-platform keyboards that stay on the host OS layout</li><li>Backlight level, automatic brightness, and battery saving</li><li>The backlight level shown on screen as it changes</li><li>Static RGB on supported keyboards</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/litra.png" width="400" alt="Litra Glow lighting panel with brightness and color temperature"></td>
+        <td width="50%"><b>Litra lights</b><ul><li>Power, brightness, and color temperature</li><li>Turns on with the camera if you want</li><li>Keeps a change made on the light itself</li></ul></td>
+    </tr>
+</table>
 
 ### Webcams
 
