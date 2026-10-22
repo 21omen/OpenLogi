@@ -171,7 +171,13 @@
 > [!IMPORTANT]
 > Сначала закройте **Logi Options+** (а в Linux — и Solaar). Приёмник может принадлежать только одному приложению одновременно.
 
-Требования: macOS 13 или новее; Linux на x86_64 или arm64 с GLIBC 2.35 или новее; Windows на x86_64 или arm64. Каждый файл подписан minisign и указан в `SHA256SUMS`. Сборка из исходников: [DEVELOPMENT.md](DEVELOPMENT.md).
+| Платформа | Система | Архитектура |
+| --- | --- | --- |
+| macOS | macOS 13 или новее | Apple silicon, Intel |
+| Linux | GLIBC 2.35 или новее | x86_64, arm64 |
+| Windows | Проверено на Windows 11 | x86_64, arm64 |
+
+Каждый файл подписан minisign и указан в `SHA256SUMS`. Сборка из исходников: [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 

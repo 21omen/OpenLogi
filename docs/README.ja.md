@@ -172,7 +172,13 @@ OpenLogi にできて Options+ にできないこと：
 > [!IMPORTANT]
 > 先に **Logi Options+**（Linux では Solaar も）を終了してください。1 つのレシーバーを同時に所有できるアプリケーションは 1 つだけです。
 
-動作要件：macOS 13 以降、Linux は x86_64 または arm64 で GLIBC 2.35 以降、Windows は x86_64 または arm64。すべてのダウンロードには minisign 署名と `SHA256SUMS` のエントリが付属します。ソースからのビルドは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
+| プラットフォーム | システム | アーキテクチャ |
+| --- | --- | --- |
+| macOS | macOS 13 以降 | Apple シリコン、Intel |
+| Linux | GLIBC 2.35 以降 | x86_64, arm64 |
+| Windows | Windows 11 で動作確認済み | x86_64, arm64 |
+
+すべてのダウンロードには minisign 署名と `SHA256SUMS` のエントリが付属します。ソースからのビルドは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
 
 ### macOS
 

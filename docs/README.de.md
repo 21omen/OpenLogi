@@ -172,7 +172,13 @@ Der Funktionsumfang hängt davon ab, was das jeweilige Gerät meldet; die App ze
 > [!IMPORTANT]
 > Beende zuerst **Logi Options+** (und unter Linux Solaar). Ein Empfänger kann immer nur einer Anwendung gleichzeitig gehören.
 
-Voraussetzungen: macOS 13 oder neuer; Linux auf x86_64 oder arm64 mit GLIBC 2.35 oder neuer; Windows auf x86_64 oder arm64. Jeder Download hat eine minisign-Signatur und einen Eintrag in `SHA256SUMS`. Zum Bauen aus dem Quellcode siehe [DEVELOPMENT.md](DEVELOPMENT.md).
+| Plattform | System | Architektur |
+| --- | --- | --- |
+| macOS | macOS 13 oder neuer | Apple Silicon, Intel |
+| Linux | GLIBC 2.35 oder neuer | x86_64, arm64 |
+| Windows | Getestet unter Windows 11 | x86_64, arm64 |
+
+Jeder Download hat eine minisign-Signatur und einen Eintrag in `SHA256SUMS`. Zum Bauen aus dem Quellcode siehe [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 

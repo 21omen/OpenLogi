@@ -171,7 +171,13 @@ A cobertura de recursos depende do que cada dispositivo informa; o app mostra s�
 > [!IMPORTANT]
 > Feche o **Logi Options+** (e o Solaar no Linux) primeiro. Só um aplicativo pode controlar um receptor por vez.
 
-Requisitos: macOS 13 ou mais recente; Linux em x86_64 ou arm64 com GLIBC 2.35 ou mais recente; Windows em x86_64 ou arm64. Todo download traz uma assinatura minisign e uma entrada em `SHA256SUMS`. Para compilar a partir do código-fonte, veja [DEVELOPMENT.md](DEVELOPMENT.md).
+| Plataforma | Sistema | Arquitetura |
+| --- | --- | --- |
+| macOS | macOS 13 ou mais recente | Apple silicon, Intel |
+| Linux | GLIBC 2.35 ou mais recente | x86_64, arm64 |
+| Windows | Testado no Windows 11 | x86_64, arm64 |
+
+Todo download traz uma assinatura minisign e uma entrada em `SHA256SUMS`. Para compilar a partir do código-fonte, veja [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 

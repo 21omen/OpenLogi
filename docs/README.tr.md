@@ -171,7 +171,13 @@ Uygulama başına profiller, odaktaki uygulamayla birlikte değişir. Bir `[apps
 > [!IMPORTANT]
 > Önce **Logi Options+**'tan (Linux'ta Solaar'dan da) çıkın. Bir alıcıyı aynı anda yalnızca bir uygulama kullanabilir.
 
-Gereksinimler: macOS 13 veya üzeri; GLIBC 2.35 veya daha yenisine sahip x86_64 ya da arm64 Linux; x86_64 ya da arm64 Windows. Her indirmenin bir minisign imzası ve `SHA256SUMS` içinde bir girdisi vardır. Kaynaktan derlemek için [DEVELOPMENT.md](DEVELOPMENT.md)'ye bakın.
+| Platform | Sistem | Mimari |
+| --- | --- | --- |
+| macOS | macOS 13 veya üzeri | Apple silicon, Intel |
+| Linux | GLIBC 2.35 veya üzeri | x86_64, arm64 |
+| Windows | Windows 11'de test edildi | x86_64, arm64 |
+
+Her indirmenin bir minisign imzası ve `SHA256SUMS` içinde bir girdisi vardır. Kaynaktan derlemek için [DEVELOPMENT.md](DEVELOPMENT.md)'ye bakın.
 
 ### macOS
 

@@ -172,7 +172,13 @@ OpenLogi는 되고 Options+는 안 되는 것들:
 > [!IMPORTANT]
 > 먼저 **Logi Options+**(Linux에서는 Solaar도)를 종료하세요. 하나의 수신기는 한 번에 하나의 애플리케이션만 소유할 수 있습니다.
 
-요구 사항: macOS 13 이상, Linux는 x86_64 또는 arm64에서 GLIBC 2.35 이상, Windows는 x86_64 또는 arm64. 모든 다운로드에는 minisign 서명과 `SHA256SUMS` 항목이 함께 제공됩니다. 소스에서 빌드하려면 [DEVELOPMENT.md](DEVELOPMENT.md)를 참고하세요.
+| 플랫폼 | 시스템 | 아키텍처 |
+| --- | --- | --- |
+| macOS | macOS 13 이상 | Apple 실리콘, Intel |
+| Linux | GLIBC 2.35 이상 | x86_64, arm64 |
+| Windows | Windows 11에서 테스트됨 | x86_64, arm64 |
+
+모든 다운로드에는 minisign 서명과 `SHA256SUMS` 항목이 함께 제공됩니다. 소스에서 빌드하려면 [DEVELOPMENT.md](DEVELOPMENT.md)를 참고하세요.
 
 ### macOS
 

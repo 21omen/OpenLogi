@@ -171,7 +171,13 @@ Las funciones disponibles dependen de lo que informe cada dispositivo; la aplica
 > [!IMPORTANT]
 > Cierra antes **Logi Options+** (y Solaar en Linux). Un receptor solo puede pertenecer a una aplicación a la vez.
 
-Requisitos: macOS 13 o posterior; Linux en x86_64 o arm64 con GLIBC 2.35 o superior; Windows en x86_64 o arm64. Cada descarga lleva una firma minisign y una entrada en `SHA256SUMS`. Para compilar desde el código fuente, consulta [DEVELOPMENT.md](DEVELOPMENT.md).
+| Plataforma | Sistema | Arquitectura |
+| --- | --- | --- |
+| macOS | macOS 13 o posterior | Apple silicon, Intel |
+| Linux | GLIBC 2.35 o superior | x86_64, arm64 |
+| Windows | Probado en Windows 11 | x86_64, arm64 |
+
+Cada descarga lleva una firma minisign y una entrada en `SHA256SUMS`. Para compilar desde el código fuente, consulta [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 

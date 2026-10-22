@@ -172,7 +172,13 @@ OpenLogi 能做、而 Options+ 做不到的事：
 > [!IMPORTANT]
 > 先退出 **Logi Options+**（Linux 上还有 Solaar）。同一个接收器同时只能由一个应用占用。
 
-系统要求：macOS 13 或更高版本；Linux 为 x86_64 或 arm64，GLIBC 2.35 或更高版本；Windows 为 x86_64 或 arm64。每个下载文件都带 minisign 签名，并在 `SHA256SUMS` 中有对应条目。从源码构建见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+| 平台 | 系统 | 架构 |
+| --- | --- | --- |
+| macOS | macOS 13 或更高版本 | Apple 芯片、Intel |
+| Linux | GLIBC 2.35 或更高版本 | x86_64, arm64 |
+| Windows | 已在 Windows 11 上测试 | x86_64, arm64 |
+
+每个下载文件都带 minisign 签名，并在 `SHA256SUMS` 中有对应条目。从源码构建见 [DEVELOPMENT.md](DEVELOPMENT.md)。
 
 ### macOS
 

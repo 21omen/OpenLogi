@@ -171,7 +171,13 @@ Feature coverage depends on what each device reports; the app shows only the con
 > [!IMPORTANT]
 > Quit **Logi Options+** (and Solaar on Linux) first. Only one application can own a receiver at a time.
 
-Requirements: macOS 13 or later; Linux on x86_64 or arm64 with GLIBC 2.35 or newer; Windows on x86_64 or arm64. Every download carries a minisign signature and an entry in `SHA256SUMS`. To build from source, see [DEVELOPMENT.md](docs/DEVELOPMENT.md).
+| Platform | System | Architecture |
+| --- | --- | --- |
+| macOS | macOS 13 or later | Apple silicon, Intel |
+| Linux | GLIBC 2.35 or newer | x86_64, arm64 |
+| Windows | Tested on Windows 11 | x86_64, arm64 |
+
+Every download carries a minisign signature and an entry in `SHA256SUMS`. To build from source, see [DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ### macOS
 

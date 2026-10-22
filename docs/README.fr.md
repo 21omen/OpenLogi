@@ -172,7 +172,13 @@ Les fonctionnalités disponibles dépendent de ce que chaque appareil signale ; 
 > [!IMPORTANT]
 > Quittez d'abord **Logi Options+** (et Solaar sous Linux). Un récepteur ne peut appartenir qu'à une seule application à la fois.
 
-Configuration requise : macOS 13 ou ultérieur ; Linux sur x86_64 ou arm64 avec GLIBC 2.35 ou plus récent ; Windows sur x86_64 ou arm64. Chaque téléchargement est accompagné d'une signature minisign et d'une entrée dans `SHA256SUMS`. Pour compiler depuis les sources, voir [DEVELOPMENT.md](DEVELOPMENT.md).
+| Plateforme | Système | Architecture |
+| --- | --- | --- |
+| macOS | macOS 13 ou ultérieur | Apple silicon, Intel |
+| Linux | GLIBC 2.35 ou plus récent | x86_64, arm64 |
+| Windows | Testé sous Windows 11 | x86_64, arm64 |
+
+Chaque téléchargement est accompagné d'une signature minisign et d'une entrée dans `SHA256SUMS`. Pour compiler depuis les sources, voir [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 
