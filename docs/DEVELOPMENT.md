@@ -556,6 +556,38 @@ it; `release appcast` reads that metadata and signs the delta. A delta that
 cannot be made is a warning, and the feed still offers the full DMG. The deltas
 go to `/releases/<tag>/` with the DMGs; their metadata stays out of R2.
 
+### Release versions
+
+Every tag run starts with `cargo xtask release version`. It reads the tag and
+checks the workspace version of the tagged commit. A stable tag is on
+release-plz's version bump, so the workspace version must be the tag's
+version. A beta tags `master` between releases without a version bump, so the
+workspace version must be the stable release the beta follows. The command
+prints three values for the build:
+
+| Output | Stable `v0.8.17` | Beta `v0.8.17-beta.12` |
+| --- | --- | --- |
+| `channel` | `stable` | `beta` |
+| `version` | `0.8.17` | `0.8.17-beta.12` |
+| `build_version` | `0.8.17` | `0.8.16.12` |
+
+Sparkle and Windows Installer order releases by `build_version`. The macOS
+bundles carry it as `CFBundleVersion`, and the MSI as its `ProductVersion`. A
+beta's build version is the stable release before it plus a fourth field, the
+beta number. So it ranks above that release and below the next one. Windows
+Installer ignores the fourth field, so the MSI allows same-version upgrades.
+
+The stable release before a beta is the newest stable tag reachable from the
+beta tag, and the beta's version must be above it. The beta number is the
+count of commits from that stable release to the beta
+(`git rev-list --count`), so it is at least 1 and grows with `master`.
+`release version` fails if the tag's number is a different count.
+
+Only `vX.Y.Z` and `vX.Y.Z-beta.N` are release tags.
+`xtask/src/support/release_tag.rs` owns the syntax and the encoding. The
+release workflow still publishes stable releases only, and it stops a beta tag
+before the build.
+
 ## Crowdin translation sync
 
 `.github/workflows/crowdin.yml` syncs GUI locales with
