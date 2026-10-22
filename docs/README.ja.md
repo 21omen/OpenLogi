@@ -76,39 +76,96 @@ OpenLogi にできて Options+ にできないこと：
 - **Linux で動く。** Linux は OpenLogi のファーストクラスプラットフォームです。
 - **対応ボタンでジェスチャー。** 対応するコントロールにジェスチャー操作を割り当てられ、ジェスチャーを完全にオフにもできます。
 - **設定がプレーンテキスト。** すべてが 1 つの TOML ファイルに収まり、好きな方法でマシン間を同期できます。
-- **スクリプトで叩ける。** GUI に加えて本物の CLI も。
+- **スクリプトで叩ける。** GUI に加えて本物の CLI も。DPI、SmartShift、Fn Lock、レポートレートを操作する JSON の[自動化 API](USAGE.md#automation-api) と、ハードウェア診断を備えています。
 
 ## 機能一覧
 
-- Logi Bolt / Unifying レシーバー、Bluetooth、有線で接続されたデバイスに対応し、バッテリー残量と充電状態を表示
-- OS 入力フックによるボタン再マッピング：組み込みアクションカタログ + カスタムキーボードショートカット（TOML で作成）¹
-- アプリごとのプロファイルオーバーレイ（フォーカスで自動切替；macOS + Windows、Linux は X11 / XWayland のみ）
-- Litra ライト：電源、明るさ、色温度。カメラの使用状況に連動した自動オン / オフも可能
+<p align="center">
+    <img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="860" alt="6 台の Logitech デバイス（マウス、キーボード、Litra ライト）が並ぶ OpenLogi のデバイス一覧">
+</p>
 
-**マウス**
+### デバイス
 
-- ミドル、モードシフト、サムホイールなどのボタンのキャプチャと再マッピング（ミドルは全プラットフォーム対応、その他はデバイス機能に依存）
-- 対応する戻る／進むボタン、DPI／モードシフトボタン、専用ジェスチャーボタン、触覚パネルでの方向別ジェスチャーバインディングとライブキャプチャ
-  - DPI／モードシフトのジェスチャーには、デバイスがイベント転送（diversion）と raw-XY のサポートを報告する必要があります。
-  - 左右の主ボタンとホイール関連のコントロールには新たにジェスチャーを割り当てられません。既存のミドルクリックのジェスチャーバインディングは保持されます。
-- Actions Ring：カーソル中心の 8 スロットアクションオーバーレイ（`ShowActionsRing`）、アプリごとのレイアウトに対応
-- DPI 制御：プリセット + サイクル / プリセット指定アクション（`0x2201`）
-- SmartShift ホイール：モード切替、感度、永続ラチェットパネル（`0x2111`）
-- デバイスごとのネイティブスクロール反転（`0x2121`、対応デバイス）
+- Logi Bolt / Unifying レシーバー、Bluetooth、有線接続に対応し、バッテリー残量と充電状態を表示
+- バッテリー低下を画面下部に通知。放電ごとに 1 回だけで、OS の通知権限は不要
+- キーボードで Caps Lock をオン / オフすると画面上にインジケーターを表示。Windows と Linux では Num Lock と Scroll Lock にも対応
 
-**キーボード**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/easy-switch.png" width="400" alt="ペアリング済みのコンピューター 3 台を一覧表示する Easy-Switch カード"></td>
+        <td width="50%"><b>Easy-Switch</b><ul><li>各チャンネルにペアリングされたコンピューターを、OS と接続方式つきで確認</li><li>対応デバイスではチャンネル名を変更可能</li></ul></td>
+    </tr>
+</table>
 
-- F キーのグローバル再マッピング：マウスと同じアクションカタログに加え、テキスト入力、キーコンボ、複数ステップのワークフローなどのパワーユーザーアクション（macOS + Windows）
-- 静的 RGB ライティング（`0x8070` / `0x8080`、対応デバイス）
+### ボタンとアクション
 
-**カメラ**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/buttons.png" width="400" alt="MX Master 4 のボタン割り当て画面。ジェスチャーボタンのインスペクターを表示中"></td>
+        <td width="50%"><b>あらゆるボタンを再マッピング</b><ul><li>組み込みアクションカタログ、カスタムショートカット、テキスト入力、複数ステップのワークフロー</li><li>タップと長押しで別々のアクション、ボタンを離すと解除される長押しトーク用のキーコンボ</li><li>ミドルクリック、戻る / 進む、DPI / モードシフト、ジェスチャーボタン、触覚パネルでのジェスチャー</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/actions-ring.png" width="400" alt="カーソルを囲む 8 スロットの Actions Ring エディター"></td>
+        <td width="50%"><b>Actions Ring</b><ul><li>カーソルの周りにリング状に並ぶ 8 つのアクション</li><li>アプリごとに独自のレイアウト</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys.png" width="400" alt="3 つのキーを Launchpad、画面ロック、スクリーンショットに割り当てた MX Keys S"></td>
+        <td width="50%"><b>キーボードのキー</b><ul><li>メディア、絵文字、スクリーンショットなどの専用キーをマウスボタンと同じように割り当て</li><li>キーを 1 つだけデバイスの既定値に戻すことも、列全体をリセットすることも可能</li></ul></td>
+    </tr>
+</table>
+
+アプリごとのプロファイルは、フォーカス中のアプリに合わせて切り替わります。`[apps]` エイリアスを使えば、1 つのプロファイルをプラットフォームをまたいで同じアプリに適用できます。
+
+### ポインターとスクロール
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/dpi.png" width="400" alt="DPI スライダーのあるポインター調整カード"></td>
+        <td width="50%"><b>ポインター</b><ul><li>DPI プリセットと、サイクル / プリセット指定アクション</li><li>ポインタ速度とレポートレート</li><li>精密モード：ボタン 1 つでマウスを最低速度に切り替え、もう一度押すと元に戻る</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/smartshift.png" width="400" alt="ホイールモード、切り替え感度、スクロールの重さを設定する SmartShift カード"></td>
+        <td width="50%"><b>SmartShift</b><ul><li>ホイールモードと切り替え感度</li><li>SmartShift Enhanced 対応マウスではスクロールの重さも調整</li><li>常時ラチェットのスイッチ</li></ul></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/scrolling.png" width="820" alt="スクロール反転、ホイール解像度、スムーズホイールを設定するスクロールカード"><br><b>スクロール</b><ul><li>デバイスごとのスクロール反転（ネイティブまたはソフトウェア）</li><li>ホイール解像度とスムーズホイールスクロール</li><li>サムホイールのないマウスでも、戻る / 進むを押しながらホイールを回すと横スクロール</li></ul></td>
+    </tr>
+</table>
+
+### キーボードとライト
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys-backlight.png" width="400" alt="MX Keys S のキーとバックライトのカード"></td>
+        <td width="50%"><b>キーボード</b><ul><li>Fn Lock と、ホスト OS のレイアウトを維持するマルチプラットフォームキーボード</li><li>バックライトの明るさ、明るさの自動調整、省電力</li><li>バックライトの明るさを変更時に画面に表示</li><li>対応キーボードでの静的 RGB</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/litra.png" width="400" alt="明るさと色温度を設定する Litra Glow のライトパネル"></td>
+        <td width="50%"><b>Litra ライト</b><ul><li>電源、明るさ、色温度</li><li>必要ならカメラの使用に連動して点灯</li><li>ライト本体で行った変更を保持</li></ul></td>
+    </tr>
+</table>
+
+### ウェブカメラ
 
 - あらゆる Logitech UVC ウェブカメラ（Brio、StreamCam、C920 シリーズなど）にプラグアンドプレイで対応
-- ライブプレビュー：見ているあいだだけカメラを起動し、離れると完全に解放されて LED も消灯
-- 画質コントロールは UVC ハードウェアへ直接書き込み：ズーム、フォーカス、露出、明るさ、コントラスト、彩度、シャープネス、ホワイトバランス、色合い。フォーカス / 露出 / ホワイトバランスは自動モード切替付きで、Meet / Zoom / OBS などカメラを使うすべてのアプリに反映
-- ワンクリックプロファイル：組み込みの「デフォルト / 配信 / ビデオ通話」に加えてカスタムスナップショットを保存可能。設定はカメラごとに保持され、次回表示時にハードウェアへ書き戻されます
+- ライブプレビューは見ているあいだだけカメラを使い、離れると LED も消灯
+- ズーム、パン、チルト、フォーカス、露出、ホワイトバランスなどあらゆる UVC コントロールをハードウェアに書き込むため、Meet、Zoom、OBS にも変更が反映
+- 組み込みの「デフォルト / 配信 / ビデオ通話」プロファイルに加えて独自のスナップショットを保存でき、カメラごとに保持
 
-¹ Linux のメディアキーアクションは D-Bus MPRIS を使います。少数の macOS 固有アクションには Linux で汎用的な対応物がなく、no-op になります。Windows では利用可能なプラットフォームアクションをネイティブの対応機能に割り当てます。
+対応機能は各デバイスが報告する内容によって異なります。アプリには、そのデバイスが対応するコントロールだけが表示されます。
+
+### プラットフォーム対応状況
+
+| 機能 | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| マウスボタンの再マッピングとジェスチャー | ✓ | ✓ | ✓ |
+| キーボードの F キー再マッピング | ✓ | ✓ | — |
+| アプリごとのプロファイル | ✓ | ✓ | X11、wlroots（sway、Hyprland）、GNOME（[コンパニオン拡張機能](../crates/openlogi-hook/gnome-shell-extension/README.md)が必要） |
+| マウスのプロファイルがポインター下のウィンドウに追従 | ✓ | ✓ | X11 のみ |
+| メディアキー | ネイティブ | ネイティブ | D-Bus MPRIS |
+| ウィンドウマネージャー操作（デスクトップ、Mission Control など） | ネイティブ | ネイティブの同等機能 | GNOME、KDE (KWin)、Hyprland。macOS 専用の一部操作は何もしない |
+| メニューバー / トレイアイコン | ✓ | ✓ | — |
+| アプリ内アップデート | Sparkle | 組み込み | 組み込み |
 
 ## インストール
 
@@ -119,7 +176,7 @@ OpenLogi にできて Options+ にできないこと：
 
 macOS 13 以降が必要です。
 
-[最新リリース](https://github.com/AprilNEA/OpenLogi/releases/latest)から署名・公証済みの `.dmg` をダウンロードし、`OpenLogi.app` を `/Applications` にドラッグします。
+[最新リリース](https://github.com/AprilNEA/OpenLogi/releases/latest)から署名・公証済みの `.dmg` をダウンロードし、`OpenLogi.app` を `/Applications` にドラッグします。「設定 → アップデート」でアップデートの確認をオンにしていれば、アプリは Sparkle で自動的に更新されます。
 
 または [Homebrew](https://brew.sh) で：
 
@@ -138,34 +195,28 @@ brew install --cask aprilnea/tap/openlogi@latest
 
 ### Linux
 
-[最新リリース](https://github.com/AprilNEA/OpenLogi/releases/latest)から `.deb` または `.rpm` をダウンロード：
+インストーラーを HTTPS でダウンロードし、中身を確認してから実行してください。シェルへのパイプは使わないでください：
 
 ```sh
-# Debian / Ubuntu
-sudo dpkg -i openlogi-*.deb
-
-# Fedora / RHEL
-sudo rpm -i openlogi-*.rpm
-
-# Arch Linux
-sudo pacman -U openlogi-*.pkg.tar.zst
+curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --location --silent --show-error \
+  --retry 3 --retry-connrefused \
+  --output openlogi-install.sh \
+  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
+less openlogi-install.sh
+sh openlogi-install.sh
+rm openlogi-install.sh
 ```
 
-パッケージは `x86_64`/`amd64` と `arm64`/`aarch64` の両方で公開されています。
+スクリプトはパッケージマネージャーとアーキテクチャに合った `.deb`、`.rpm`、`.pkg.tar.zst` を選び、minisign 署名とチェックサムを検証し、udev ルールをインストールして、agent をユーザーサービスとして起動します。事前に `minisign` をインストールし、`sudo` を付けずに通常ユーザーで実行してください。パッケージは `x86_64` と `arm64` 向けに提供され、GLIBC 2.35 以降が必要です。
 
-パッケージは udev ルールをインストールし、`sudo` なしで `/dev/hidraw*` と `/dev/uinput` にアクセスできるようにします。インストール後、ユーザーのバックグラウンドエージェントを有効化してください：
-
-```sh
-systemctl --user enable --now openlogi-agent.service
-```
-
-手動 / ソースからのインストールや systemd のないディストリビューションは [INSTALL-linux.md](INSTALL-linux.md) を参照。
+各リリースには Flatpak バンドルも付属し、リポジトリでは NixOS モジュールも提供しています。両者の使い方、バージョン固定やソースからのインストール、systemd のないディストリビューション、Hyprland / Omarchy での注意点は [INSTALL-linux.md](INSTALL-linux.md) を参照してください。
 
 ### Windows
 
 各リリースには署名済みポータブル `.zip` とユーザー単位の `.msi` インストーラー（x86_64 / arm64）が付属します。どちらも GUI（`OpenLogi.exe`）と、すべてのデバイス I/O を所有するバックグラウンド agent（`openlogi-agent.exe`）を同梱します。ポータブル zip では 2 ファイルを同じ場所に置いてください。そうしないと GUI は接続先を失います。
 
-Windows サポートは動作しており、有線キーボードと Unifying レシーバー接続のマウスを使い、MSI のインストール、インプレースアップグレード、アンインストールを含めて Windows 11 実機でエンドツーエンド検証済みです。macOS 版より新しいため、問題があれば[報告](https://github.com/AprilNEA/OpenLogi/issues)してください。agent はシステムトレイアイコン（メインウィンドウを表示 / 終了）を表示し、メインウィンドウを閉じてもアプリを開けます。Windows で無効にするには TOML の `[app_settings]` ブロックで `show_in_menu_bar = false` を設定し、agent を再起動してください。GUI の切り替えは現在 macOS 専用です。
+Windows サポートは、有線キーボードと Unifying レシーバー接続のマウスを使い、MSI のインストール、インプレースアップグレード、アンインストールを含めて Windows 11 実機でエンドツーエンド検証済みです。macOS 版より新しいため、問題があれば[報告](https://github.com/AprilNEA/OpenLogi/issues)してください。agent はシステムトレイアイコン（メインウィンドウを表示 / 終了）を表示し、メインウィンドウを閉じてもアプリを開けます。トレイアイコンは「設定 → 一般」でオフにできます。
 
 ソースからのビルドは [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
 
@@ -176,11 +227,11 @@ Windows サポートは動作しており、有線キーボードと Unifying �
 
 ## 設定
 
-[CONFIGURATION.md](CONFIGURATION.md) を参照
+設定はプレーンな TOML を使い、保存時もシンボリックリンクされた設定ファイルを維持します。[CONFIGURATION.md](CONFIGURATION.md) を参照。
 
 ## 開発
 
-[DEVELOPMENT.md](DEVELOPMENT.md) を参照
+[DEVELOPMENT.md](DEVELOPMENT.md) を参照。[macOS 入力フックの安全性](DEVELOPMENT.md#macos-input-hook-safety)についても記載しています。
 
 ## 謝辞
 

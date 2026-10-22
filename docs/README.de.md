@@ -76,50 +76,107 @@ Was OpenLogi kann und Options+ nicht:
 - **Auf Linux laufen.** Linux ist in OpenLogi eine vollwertige Plattform.
 - **Gesten auf unterstützten Tasten.** Weise unterstützten Bedienelementen Gestenaktionen zu — oder schalte Gesten ganz ab.
 - **Konfiguration im Klartext.** Alles steckt in einer TOML-Datei, die sich beliebig zwischen Rechnern synchronisieren lässt.
-- **Skriptbar.** Neben der GUI gibt es eine echte CLI.
+- **Skriptbar.** Neben der GUI gibt es eine echte CLI: eine JSON-[Automatisierungs-API](USAGE.md#automation-api) für DPI, SmartShift, Fn-Sperre und Abfragerate, dazu Hardware-Diagnosen.
 
 ## Funktionen
 
-- Geräte über Logi-Bolt-Empfänger, Unifying-Empfänger, Bluetooth oder Kabel, mit Akkustand und Ladezustand
-- Tastenumbelegung über den OS-Input-Hook: Katalog eingebauter Aktionen plus eigene Tastenkürzel (in TOML angelegt)¹
-- Profil-Overlays pro Anwendung mit Auto-Wechsel bei App-Fokus (macOS + Windows; Linux nur X11 / XWayland)
-- Litra-Leuchten: Ein/Aus, Helligkeit und Farbtemperatur, auf Wunsch automatisch an die Kameraaktivität gekoppelt
+<p align="center">
+    <img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="860" alt="OpenLogi-Geräteliste mit sechs Logitech-Geräten: Mäuse, eine Tastatur und eine Litra-Leuchte">
+</p>
 
-**Maus**
+### Geräte
 
-- Erfassung und Umbelegung von Mitteltaste, Mode-Shift und Daumenrad (Mitteltaste überall, der Rest, sofern das Gerät sie bereitstellt)
-- Gestenbelegungen pro Richtung mit Live-Erfassung auf unterstützten Bedienelementen: Zurück/Vorwärts, DPI/ModeShift, dedizierte Gestentaste und haptisches Panel
-  - DPI/ModeShift-Gesten erfordern vom Gerät gemeldete Unterstützung für Ereignisumleitung (diversion) und raw-XY.
-  - Linke und rechte Maustaste sowie Rad-Bedienelemente können nicht neu mit Gesten belegt werden; bestehende Gestenbelegungen der Mitteltaste bleiben erhalten.
-- Actions Ring: ein cursorzentriertes Aktions-Overlay mit acht Slots (`ShowActionsRing`), mit Layouts pro Anwendung
-- DPI-Steuerung mit Voreinstellungen und Cycle-/Set-Preset-Aktionen (`0x2201`)
-- SmartShift-Rad: Modus, Empfindlichkeit und permanente Rasterung (`0x2111`)
-- Native Scroll-Umkehr pro Gerät (`0x2121`, unterstützte Geräte)
+- Logi-Bolt- und Unifying-Empfänger, Bluetooth und Kabelverbindungen, mit Akkustand und Ladezustand
+- Hinweise bei niedrigem Akkustand am unteren Bildschirmrand, einmal pro Entladung, ohne Berechtigung für Systembenachrichtigungen
+- Eine Bildschirmanzeige, wenn eine Tastatur Caps Lock ein- oder ausschaltet, unter Windows und Linux auch für Num Lock und Scroll Lock
 
-**Tastatur**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/easy-switch.png" width="400" alt="Easy-Switch-Karte mit drei gekoppelten Computern"></td>
+        <td width="50%"><b>Easy-Switch</b><ul><li>Sieh, welcher Computer auf welchem Kanal gekoppelt ist, samt Betriebssystem und Verbindung</li><li>Benenne einen Kanal um, sofern das Gerät es erlaubt</li></ul></td>
+    </tr>
+</table>
 
-- Globale F-Tasten-Umbelegung: derselbe Aktionskatalog wie bei der Maus, plus Power-User-Aktionen — Texteingabe, Tastenkombinationen, mehrstufige Workflows (macOS + Windows)
-- Statische RGB-Beleuchtung (`0x8070` / `0x8080`, unterstützte Geräte)
+### Tasten und Aktionen
 
-**Kamera**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/buttons.png" width="400" alt="Tastenbelegung einer MX Master 4 mit geöffnetem Inspektor für die Gestentaste"></td>
+        <td width="50%"><b>Jede Taste umbelegen</b><ul><li>Ein eingebauter Aktionskatalog, eigene Tastenkürzel, Texteingabe oder mehrstufige Workflows</li><li>Getrennte Aktionen für Tippen und Halten sowie Hold-to-Talk-Kombinationen, die mit der Taste losgelassen werden</li><li>Gesten auf Mittelklick, Zurück/Vorwärts, DPI/ModeShift, der Gestentaste und dem Haptik-Panel</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/actions-ring.png" width="400" alt="Actions-Ring-Editor mit acht Slots rund um den Cursor"></td>
+        <td width="50%"><b>Actions Ring</b><ul><li>Acht Aktionen in einem Ring um den Cursor</li><li>Ein eigenes Layout pro Anwendung</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys.png" width="400" alt="MX Keys S mit drei Tasten, belegt mit Launchpad, Bildschirm sperren und Bildschirmfoto"></td>
+        <td width="50%"><b>Tastaturtasten</b><ul><li>Medien-, Emoji-, Screenshot- und andere Sondertasten wie Maustasten belegen</li><li>Eine einzelne Taste auf die Gerätevorgabe zurücksetzen oder die ganze Reihe</li></ul></td>
+    </tr>
+</table>
+
+Profile pro Anwendung wechseln mit der App im Fokus. Ein `[apps]`-Alias lässt ein Profil einer Anwendung plattformübergreifend folgen.
+
+### Zeiger und Scrollen
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/dpi.png" width="400" alt="Karte zur Zeigerabstimmung mit DPI-Schieberegler"></td>
+        <td width="50%"><b>Zeiger</b><ul><li>DPI-Voreinstellungen mit Cycle- und Set-Preset-Aktionen</li><li>Zeigergeschwindigkeit und Abfragerate</li><li>Präzisionsmodus: Eine Taste schaltet die Maus auf ihre langsamste Geschwindigkeit und wieder zurück</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/smartshift.png" width="400" alt="SmartShift-Karte mit Radmodus, Empfindlichkeit und Scrollkraft"></td>
+        <td width="50%"><b>SmartShift</b><ul><li>Radmodus und Empfindlichkeit</li><li>Scrollkraft bei Mäusen mit SmartShift Enhanced</li><li>Ein Schalter für dauerhafte Rasterung</li></ul></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/scrolling.png" width="820" alt="Scroll-Karte mit Umkehr, Mausradauflösung und weichem Mausrad"><br><b>Scrollen</b><ul><li>Scroll-Umkehr pro Gerät, nativ oder per Software</li><li>Mausradauflösung und weiches Scrollen mit dem Mausrad</li><li>Zurück oder Vorwärts halten und das Rad drehen, um auf Mäusen ohne Daumenrad seitwärts zu scrollen</li></ul></td>
+    </tr>
+</table>
+
+### Tastatur und Beleuchtung
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys-backlight.png" width="400" alt="Karten für Tasten und Hintergrundbeleuchtung einer MX Keys S"></td>
+        <td width="50%"><b>Tastatur</b><ul><li>Fn Lock sowie Multi-Plattform-Tastaturen, die beim Layout des Host-Betriebssystems bleiben</li><li>Stufe der Hintergrundbeleuchtung, automatische Helligkeit und Energiesparen</li><li>Bildschirmanzeige der Beleuchtungsstufe, sobald sie sich ändert</li><li>Statisches RGB auf unterstützten Tastaturen</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/litra.png" width="400" alt="Litra-Glow-Beleuchtungspanel mit Helligkeit und Farbtemperatur"></td>
+        <td width="50%"><b>Litra-Leuchten</b><ul><li>Ein/Aus, Helligkeit und Farbtemperatur</li><li>Schaltet sich auf Wunsch mit der Kamera ein</li><li>Übernimmt Änderungen, die direkt an der Leuchte vorgenommen werden</li></ul></td>
+    </tr>
+</table>
+
+### Webcams
 
 - Jede Logitech-UVC-Webcam (Brio, StreamCam, die C920-Serie, …), Plug and Play
-- Live-Vorschau, die die Kamera nur öffnet, solange du hinschaust — beim Verlassen wird sie vollständig freigegeben und die LED erlischt
-- Bildregler schreiben direkt in die UVC-Hardware — Zoom, Fokus, Belichtung, Helligkeit, Kontrast, Sättigung, Schärfe, Weißabgleich, Farbton, mit Automatik-Schaltern für Fokus / Belichtung / Weißabgleich — und wirken damit in Meet / Zoom / OBS und jeder anderen App, die die Kamera nutzt
-- Ein-Klick-Profile: eingebaut Standard / Streaming / Videoanruf, dazu eigene Schnappschüsse; Einstellungen bleiben pro Kamera erhalten und werden beim nächsten Ansehen in die Hardware zurückgeschrieben
+- Live-Vorschau, die die Kamera nur belegt, solange du hinschaust; verlässt du sie, erlischt die LED
+- Zoom, Schwenken, Neigen, Fokus, Belichtung, Weißabgleich und alle anderen UVC-Regler, direkt in die Hardware geschrieben, sodass Meet, Zoom und OBS die Änderung sehen
+- Eingebaute Profile Standard / Streaming / Videoanruf plus eigene Schnappschüsse, pro Kamera gespeichert
 
-¹ Medientasten-Aktionen nutzen unter Linux D-Bus MPRIS; einige macOS-spezifische Aktionen haben unter Linux kein universelles Gegenstück und sind No-ops. Windows bildet Plattformaktionen, wo verfügbar, auf native Entsprechungen ab.
+Der Funktionsumfang hängt davon ab, was das jeweilige Gerät meldet; die App zeigt nur die Bedienelemente, die ein Gerät unterstützt.
+
+### Plattformunterstützung
+
+| Funktion | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| Umbelegung von Maustasten und Gesten | ✓ | ✓ | ✓ |
+| Umbelegung der F-Tasten | ✓ | ✓ | — |
+| Profile pro Anwendung | ✓ | ✓ | X11, wlroots (sway, Hyprland), GNOME mit der [Begleiterweiterung](../crates/openlogi-hook/gnome-shell-extension/README.md) |
+| Mausprofil folgt dem Fenster unter dem Zeiger | ✓ | ✓ | Nur X11 |
+| Medientasten | Nativ | Nativ | D-Bus MPRIS |
+| Fenstermanager-Aktionen (Schreibtische, Mission Control, …) | Nativ | Native Entsprechungen | GNOME, KDE (KWin), Hyprland; einige reine macOS-Aktionen bewirken nichts |
+| Symbol in Menüleiste / Infobereich | ✓ | ✓ | — |
+| Updates in der App | Sparkle | Integriert | Integriert |
 
 ## Installation
 
 > [!IMPORTANT]
-> Beende zuerst **Logi Options+** — die beiden Anwendungen streiten sich um den HID++-Zugriff, und ein Empfänger kann immer nur einem gehören.
+> Beende zuerst **Logi Options+**: Die beiden Anwendungen streiten sich um den HID++-Zugriff, und ein Empfänger kann immer nur einer von beiden gehören.
 
 ### macOS
 
 Erfordert macOS 13 oder neuer.
 
-Lade das signierte, notarisierte `.dmg` vom [neuesten Release](https://github.com/AprilNEA/OpenLogi/releases/latest) und ziehe `OpenLogi.app` nach `/Applications`.
+Lade das signierte, notarisierte `.dmg` vom [neuesten Release](https://github.com/AprilNEA/OpenLogi/releases/latest) und ziehe `OpenLogi.app` nach `/Applications`. Die App aktualisiert sich selbst über Sparkle, wenn unter Einstellungen → Updates die Updateprüfung aktiviert ist.
 
 Oder per [Homebrew](https://brew.sh):
 
@@ -138,34 +195,28 @@ brew install --cask aprilnea/tap/openlogi@latest
 
 ### Linux
 
-Lade das `.deb` oder `.rpm` vom [neuesten Release](https://github.com/AprilNEA/OpenLogi/releases/latest):
+Lade das Installationsskript über HTTPS herunter, prüfe es und führe es dann aus. Leite es nicht direkt in eine Shell:
 
 ```sh
-# Debian / Ubuntu
-sudo dpkg -i openlogi-*.deb
-
-# Fedora / RHEL
-sudo rpm -i openlogi-*.rpm
-
-# Arch Linux
-sudo pacman -U openlogi-*.pkg.tar.zst
+curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --location --silent --show-error \
+  --retry 3 --retry-connrefused \
+  --output openlogi-install.sh \
+  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
+less openlogi-install.sh
+sh openlogi-install.sh
+rm openlogi-install.sh
 ```
 
-Pakete erscheinen für `x86_64`/`amd64` und `arm64`/`aarch64`.
+Das Skript wählt das passende `.deb`, `.rpm` oder `.pkg.tar.zst` für deinen Paketmanager und deine Architektur, prüft dessen minisign-Signatur und Prüfsumme, installiert udev-Regeln und startet den Agent als Benutzerdienst. Installiere vorher `minisign` und führe das Skript als normaler Benutzer aus, nicht mit `sudo`. Pakete gibt es für `x86_64` und `arm64`; sie benötigen GLIBC 2.35 oder neuer.
 
-Das Paket installiert udev-Regeln, die deinem Benutzer Zugriff auf `/dev/hidraw*` und `/dev/uinput` ohne `sudo` geben. Aktiviere nach der Installation den Hintergrund-Agent für deinen Benutzer:
-
-```sh
-systemctl --user enable --now openlogi-agent.service
-```
-
-Für manuelle / Quellcode-Installationen und Distributionen ohne systemd siehe [INSTALL-linux.md](INSTALL-linux.md).
+Jedes Release enthält außerdem ein Flatpak-Bundle, und das Repository stellt ein NixOS-Modul bereit. Zu beidem sowie zu Installationen einer festen Version oder aus dem Quellcode, zu Distributionen ohne systemd und zu Hinweisen für Hyprland/Omarchy siehe [INSTALL-linux.md](INSTALL-linux.md).
 
 ### Windows
 
 Jedem Release liegen signierte portable `.zip`-Archive und Per-User-`.msi`-Installer (x86_64 und arm64) bei. Beide enthalten die GUI (`OpenLogi.exe`) zusammen mit dem Hintergrund-Agent (`openlogi-agent.exe`), dem sämtliche Geräte-I/O gehören. Halte bei der portablen ZIP beide Dateien nebeneinander, sonst hat die GUI keine Gegenstelle.
 
-Windows funktioniert und wurde auf echter Windows 11-Hardware vollständig validiert — mit einer kabelgebundenen Tastatur und einer Maus am Unifying-Empfänger, einschließlich Installation, In-Place-Upgrade und Deinstallation des MSI. Der Port ist neuer als die macOS-Version; [melde](https://github.com/AprilNEA/OpenLogi/issues) bitte Ecken und Kanten. Der Agent zeigt ein Symbol im Infobereich (Hauptfenster anzeigen / Beenden), damit die App nach dem Schließen des Hauptfensters erreichbar bleibt. Setze zum Deaktivieren unter Windows `show_in_menu_bar = false` im TOML-Block `[app_settings]` und starte den Agent neu; der GUI-Schalter ist derzeit nur unter macOS verfügbar.
+Windows wurde auf Windows 11 mit echter Hardware (einer kabelgebundenen Tastatur und einer Maus am Unifying-Empfänger) vollständig validiert, einschließlich Installation, In-Place-Upgrade und Deinstallation des MSI. Der Port ist neuer als die macOS-Version; stößt du auf Ecken und Kanten, [melde sie](https://github.com/AprilNEA/OpenLogi/issues) bitte. Der Agent zeigt ein Symbol im Infobereich (Hauptfenster anzeigen / Beenden), damit die App nach dem Schließen des Hauptfensters erreichbar bleibt; abschalten lässt es sich unter Einstellungen → Allgemein.
 
 Zum Bauen aus dem Quellcode siehe [DEVELOPMENT.md](DEVELOPMENT.md).
 
@@ -176,11 +227,11 @@ Siehe [USAGE.md](USAGE.md)
 
 ## Konfiguration
 
-Siehe [CONFIGURATION.md](CONFIGURATION.md)
+Einstellungen werden als reines TOML gespeichert; beim Speichern bleiben per Symlink eingebundene Konfigurationsdateien erhalten. Siehe [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Entwicklung
 
-Siehe [DEVELOPMENT.md](DEVELOPMENT.md)
+Siehe [DEVELOPMENT.md](DEVELOPMENT.md), einschließlich [Sicherheit des macOS-Input-Hooks](DEVELOPMENT.md#macos-input-hook-safety).
 
 ## Danksagungen
 

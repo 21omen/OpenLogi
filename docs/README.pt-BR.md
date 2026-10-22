@@ -73,39 +73,98 @@ O que o OpenLogi faz e o Options+ não faz:
 
 - **Fica leve.** Rust nativo + GPUI.
 - **Roda em Linux.** Linux é uma plataforma de primeira classe no OpenLogi.
-- **Gestos em qualquer botão.** Dê o papel de gesto a qualquer botão físico, ou desligue os gestos por completo.
+- **Gestos nos botões compatíveis.** Atribua ações de gesto aos controles compatíveis, ou desligue os gestos por completo.
 - **Configuração em texto puro.** Tudo em um único arquivo TOML, sincronizável entre máquinas do jeito que você preferir.
-- **Programável.** Uma CLI de verdade ao lado da GUI.
+- **Programável.** Uma CLI de verdade ao lado da GUI: uma [API de automação](USAGE.md#automation-api) em JSON para DPI, SmartShift, Fn-lock e taxa de relatório, além de diagnósticos de hardware.
 
 ## Recursos
 
-- Dispositivos conectados via receptores Logi Bolt, receptores Unifying, Bluetooth ou cabo, com porcentagem de bateria e estado de carga
-- Remapeamento de botões pelo hook de entrada do sistema operacional: um catálogo de ações embutido mais atalhos de teclado personalizados definidos no TOML, incluindo ações independentes para pressão curta/longa e combinações hold-until-release para push-to-talk¹
-- Sobreposições de perfil por aplicativo, trocadas automaticamente ao focar a janela (macOS + Windows; no Linux, só em X11 / XWayland)
-- Luzes Litra: liga/desliga, brilho e temperatura de cor, com opção de ligar automaticamente seguindo o uso da câmera
+<p align="center">
+    <img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="860" alt="Lista de dispositivos do OpenLogi com seis dispositivos Logitech: mouses, um teclado e uma luz Litra">
+</p>
 
-**Mouse**
+### Dispositivos
 
-- Captura e remapeamento dos botões do meio, mode-shift e da roda lateral (o botão do meio funciona em qualquer dispositivo, os outros dependem do que o hardware expõe)
-- Vínculos de gesto por direção, com captura ao vivo, em qualquer botão compatível
-- Actions Ring: uma sobreposição de oito posições centrada no cursor (`ShowActionsRing`), com layouts por aplicativo
-- Controle de DPI com predefinições e ações de ciclar / definir predefinição (`0x2201`)
-- Roda SmartShift: alternância de modo, sensibilidade e um painel de catraca permanente (`0x2111`)
-- Inversão nativa de rolagem por dispositivo (`0x2121`, em dispositivos compatíveis)
+- Receptores Logi Bolt e Unifying, Bluetooth e conexões com fio, com nível de bateria e estado de carga
+- Avisos de bateria fraca na parte de baixo da tela, uma vez por descarga, sem precisar de permissão de notificação do sistema
+- Um indicador na tela quando um teclado liga ou desliga o Caps Lock, além de Num Lock e Scroll Lock no Windows e no Linux
 
-**Teclado**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/easy-switch.png" width="400" alt="Cartão Easy-Switch listando três computadores pareados"></td>
+        <td width="50%"><b>Easy-Switch</b><ul><li>Veja qual computador está pareado em cada canal, com o sistema operacional e a conexão</li><li>Renomeie um canal nos dispositivos que permitem</li></ul></td>
+    </tr>
+</table>
 
-- Remapeamento global das teclas F: o mesmo catálogo de ações do mouse, mais ações avançadas como texto digitado, combinações de teclas e fluxos de várias etapas (macOS + Windows)
-- Iluminação RGB estática (`0x8070` / `0x8080`, em dispositivos compatíveis)
+### Botões e ações
 
-**Câmera**
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/buttons.png" width="400" alt="Mapeamento de botões de um MX Master 4, com o inspetor do botão de gesto aberto"></td>
+        <td width="50%"><b>Remapeie qualquer botão</b><ul><li>Um catálogo de ações embutido, atalhos personalizados, texto digitado ou fluxos de várias etapas</li><li>Ações separadas para toque e pressão longa, e combinações de push-to-talk que soltam junto com o botão</li><li>Gestos no clique do meio, Voltar/Avançar, DPI/ModeShift, no botão de gesto e no painel háptico</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/actions-ring.png" width="400" alt="Editor do Actions Ring com oito posições ao redor do cursor"></td>
+        <td width="50%"><b>Actions Ring</b><ul><li>Oito ações em um anel ao redor do cursor</li><li>Um layout próprio para cada aplicativo</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys.png" width="400" alt="MX Keys S com três teclas vinculadas a Launchpad, Bloquear Tela e Captura de Tela"></td>
+        <td width="50%"><b>Teclas do teclado</b><ul><li>Vincule teclas de mídia, emoji, captura de tela e outras teclas dedicadas como se fossem botões do mouse</li><li>Restaure uma tecla ao padrão do dispositivo ou redefina a linha inteira</li></ul></td>
+    </tr>
+</table>
 
-- Qualquer webcam UVC da Logitech (Brio, StreamCam, a série C920, entre outras), plug and play
-- Pré-visualização ao vivo que só abre a câmera enquanto você está olhando; sair da tela libera a câmera por completo e o LED apaga
-- Controles de imagem gravados direto no hardware UVC: zoom, foco, exposição, brilho, contraste, saturação, nitidez, balanço de branco, tonalidade, anti-flicker e compensação de pouca luz, com alternância de modo automático para foco / exposição / balanço de branco, então as mudanças valem no Meet, no Zoom, no OBS e em qualquer outro app que use a câmera
-- Perfis de um clique: Padrão / Streaming / Chamada de vídeo embutidos, mais instantâneos personalizados; as configurações persistem por câmera e são gravadas de volta no hardware na próxima vez que você abrir a visualização
+Os perfis por aplicativo trocam junto com o app em foco. Um alias em `[apps]` permite que um perfil acompanhe um aplicativo em todas as plataformas.
 
-¹ Ações de tecla de mídia usam D-Bus MPRIS no Linux; algumas ações específicas do macOS não têm equivalente universal no Linux e não fazem nada. No Windows, as ações de plataforma são mapeadas para equivalentes nativos quando disponível.
+### Ponteiro e rolagem
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/dpi.png" width="400" alt="Cartão de ajuste do ponteiro com um controle deslizante de DPI"></td>
+        <td width="50%"><b>Ponteiro</b><ul><li>Predefinições de DPI com ações de ciclar e definir predefinição</li><li>Velocidade do ponteiro e taxa de relatório</li><li>Modo de precisão: um botão leva o mouse à velocidade mais lenta e de volta</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/smartshift.png" width="400" alt="Cartão SmartShift com modo da roda, sensibilidade e força de rolagem"></td>
+        <td width="50%"><b>SmartShift</b><ul><li>Modo da roda e sensibilidade</li><li>Força de rolagem em mouses com SmartShift Enhanced</li><li>Uma chave de catraca permanente</li></ul></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/scrolling.png" width="820" alt="Cartão de rolagem com inversão, resolução da roda e roda suave"><br><b>Rolagem</b><ul><li>Inversão de rolagem por dispositivo, nativa ou por software</li><li>Resolução da roda e rolagem suave da roda</li><li>Segure Voltar ou Avançar e gire a roda para rolar na horizontal em mouses sem roda lateral</li></ul></td>
+    </tr>
+</table>
+
+### Teclado e iluminação
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys-backlight.png" width="400" alt="Cartões de teclas e luz de fundo de um MX Keys S"></td>
+        <td width="50%"><b>Teclado</b><ul><li>Fn Lock, e teclados multiplataforma que seguem o layout do sistema operacional do host</li><li>Nível da luz de fundo, brilho automático e economia de bateria</li><li>O nível da luz de fundo mostrado na tela enquanto muda</li><li>RGB estático nos teclados compatíveis</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/litra.png" width="400" alt="Painel de iluminação da Litra Glow com brilho e temperatura de cor"></td>
+        <td width="50%"><b>Luzes Litra</b><ul><li>Liga/desliga, brilho e temperatura de cor</li><li>Liga junto com a câmera, se você quiser</li><li>Mantém um ajuste feito na própria luz</li></ul></td>
+    </tr>
+</table>
+
+### Webcams
+
+- Qualquer webcam UVC da Logitech (Brio, StreamCam, a série C920, …), plug and play
+- Pré-visualização ao vivo que só ocupa a câmera enquanto você está olhando; saia dela e o LED apaga
+- Zoom, pan, tilt, foco, exposição, balanço de branco e todos os outros controles UVC, gravados no hardware para que o Meet, o Zoom e o OBS vejam a mudança
+- Perfis Padrão / Streaming / Chamada de vídeo embutidos mais seus próprios instantâneos, guardados por câmera
+
+A cobertura de recursos depende do que cada dispositivo informa; o app mostra só os controles que o dispositivo suporta.
+
+### Suporte por plataforma
+
+| Recurso | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| Remapeamento de botões do mouse e gestos | ✓ | ✓ | ✓ |
+| Remapeamento das teclas F do teclado | ✓ | ✓ | — |
+| Perfis por aplicativo | ✓ | ✓ | X11, wlroots (sway, Hyprland), GNOME com a [extensão complementar](../crates/openlogi-hook/gnome-shell-extension/README.md) |
+| Perfil do mouse segue a janela sob o ponteiro | ✓ | ✓ | Só X11 |
+| Teclas de mídia | Nativo | Nativo | D-Bus MPRIS |
+| Ações do gerenciador de janelas (áreas de trabalho, Mission Control, …) | Nativo | Equivalentes nativos | GNOME, KDE (KWin), Hyprland; algumas ações exclusivas do macOS não fazem nada |
+| Ícone na barra de menus / bandeja | ✓ | ✓ | — |
+| Atualizações no app | Sparkle | Embutido | Embutido |
 
 ## Instalação
 
@@ -116,7 +175,7 @@ O que o OpenLogi faz e o Options+ não faz:
 
 Requer macOS 13 ou mais recente.
 
-Baixe o `.dmg` assinado e notarizado do [último lançamento](https://github.com/AprilNEA/OpenLogi/releases/latest) e arraste `OpenLogi.app` para `/Applications`.
+Baixe o `.dmg` assinado e notarizado do [último lançamento](https://github.com/AprilNEA/OpenLogi/releases/latest) e arraste `OpenLogi.app` para `/Applications`. O app se atualiza sozinho pelo Sparkle quando a verificação de atualizações está ativada em Ajustes → Atualizações.
 
 Ou instale pelo [Homebrew](https://brew.sh):
 
@@ -135,71 +194,28 @@ brew install --cask aprilnea/tap/openlogi@latest
 
 ### Linux
 
-Baixe o pacote da sua distribuição no [último lançamento](https://github.com/AprilNEA/OpenLogi/releases/latest):
+Baixe o instalador por HTTPS, inspecione-o e só então execute. Não o redirecione direto para um shell:
 
 ```sh
-# Debian / Ubuntu
-sudo dpkg -i openlogi-*.deb
-
-# Fedora / RHEL
-sudo rpm -i openlogi-*.rpm
-
-# Arch Linux
-sudo pacman -U openlogi-*.pkg.tar.zst
+curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --location --silent --show-error \
+  --retry 3 --retry-connrefused \
+  --output openlogi-install.sh \
+  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
+less openlogi-install.sh
+sh openlogi-install.sh
+rm openlogi-install.sh
 ```
 
-Pacotes são publicados tanto para `x86_64`/`amd64` quanto para `arm64`/`aarch64`.
-Os pacotes pré-compilados exigem GLIBC 2.35 ou mais recente (base do Ubuntu 22.04).
+O script escolhe o `.deb`, `.rpm` ou `.pkg.tar.zst` certo para o seu gerenciador de pacotes e arquitetura, verifica a assinatura minisign e o checksum, instala as regras do udev e inicia o agente como serviço de usuário. Instale o `minisign` antes e execute o script com o seu usuário normal, não com `sudo`. Há pacotes para `x86_64` e `arm64`, que exigem GLIBC 2.35 ou mais recente.
 
-Usuários de NixOS podem importar o módulo do repositório, que instala o pacote e as regras do udev e inicia o agente junto com a sessão gráfica:
-
-```nix
-{
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.openlogi = {
-    url = "github:AprilNEA/OpenLogi";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  outputs = { nixpkgs, openlogi, ... }: {
-    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux"; # ou aarch64-linux
-      modules = [
-        openlogi.nixosModules.default
-        { programs.openlogi.enable = true; }
-      ];
-    };
-  };
-}
-```
-
-Todos os pacotes Linux instalam regras udev que dão ao seu usuário acesso a
-`/dev/hidraw*`, `/dev/uinput` e ao nó `/dev/input/event*` do seu mouse Logitech
-sem precisar de `sudo`. O módulo NixOS inicia o agente automaticamente; depois de uma
-instalação via `.deb`, `.rpm` ou `.pkg.tar.zst`, habilite-o para o seu usuário:
-
-```sh
-systemctl --user enable --now openlogi-agent.service
-```
-
-Veja [INSTALL-linux.md](INSTALL-linux.md) para as opções completas do NixOS, instalação
-manual / a partir do código-fonte, e distribuições sem systemd.
+Cada lançamento também traz um bundle Flatpak, e o repositório oferece um módulo NixOS. Veja [INSTALL-linux.md](INSTALL-linux.md) para os dois, para instalação de versão fixa e a partir do código-fonte, distribuições sem systemd e notas sobre Hyprland/Omarchy.
 
 ### Windows
 
-Arquivos `.zip` portáteis assinados e instaladores `.msi` por usuário (x86_64 e arm64)
-acompanham cada lançamento. Os dois trazem a GUI (`OpenLogi.exe`) junto com o agente em
-segundo plano (`openlogi-agent.exe`), que controla toda a E/S de dispositivos. Mantenha
-os dois arquivos juntos ao usar o zip portátil, senão a GUI não tem a quem se conectar.
+Arquivos `.zip` portáteis assinados e instaladores `.msi` por usuário (x86_64 e arm64) acompanham cada lançamento. Os dois trazem a GUI (`OpenLogi.exe`) junto com o agente em segundo plano (`openlogi-agent.exe`), que controla toda a E/S de dispositivos. Mantenha os dois arquivos juntos ao usar o zip portátil, senão a GUI não tem a quem se conectar.
 
-O suporte a Windows foi validado de ponta a ponta no Windows 11 com hardware real (um
-teclado com fio e um mouse com receptor Unifying), incluindo instalação, atualização no
-local e desinstalação do MSI. É mais recente que o build de macOS; se encontrar algum
-problema, [relate aqui](https://github.com/AprilNEA/OpenLogi/issues). O agente mostra um
-ícone na bandeja do sistema (Show Main Window / Quit), então o app continua acessível
-depois que a janela principal é fechada. Para desativar esse ícone no Windows, defina
-`show_in_menu_bar = false` no bloco `[app_settings]` do TOML e reinicie o agente; a opção
-na GUI hoje é só para macOS.
+O suporte a Windows foi validado de ponta a ponta no Windows 11 com hardware real (um teclado com fio e um mouse com receptor Unifying), incluindo instalação, atualização no local e desinstalação do MSI. É mais recente que o build de macOS; se encontrar algum problema, [relate aqui](https://github.com/AprilNEA/OpenLogi/issues). O agente mostra um ícone na bandeja do sistema (Mostrar a janela principal / Encerrar OpenLogi), então o app continua acessível depois que a janela principal é fechada; desative-o em Ajustes → Geral.
 
 Para compilar a partir do código-fonte, veja [DEVELOPMENT.md](DEVELOPMENT.md).
 
@@ -210,11 +226,11 @@ Veja [USAGE.md](USAGE.md)
 
 ## Configuração
 
-Veja [CONFIGURATION.md](CONFIGURATION.md)
+As configurações usam TOML puro; salvar preserva arquivos de configuração que são links simbólicos. Veja [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Desenvolvimento
 
-Veja [DEVELOPMENT.md](DEVELOPMENT.md)
+Veja [DEVELOPMENT.md](DEVELOPMENT.md), incluindo [segurança do hook de entrada no macOS](DEVELOPMENT.md#macos-input-hook-safety).
 
 ## Agradecimentos
 

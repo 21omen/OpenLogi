@@ -80,54 +80,70 @@ OpenLogi 能做、而 Options+ 做不到的事：
 
 ## 功能
 
-<table>
-    <tr>
-        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="420" alt="设备列表：四只 Logitech 鼠标及各自的连接方式"></td>
-        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/buttons-gestures.png" width="420" alt="MX Master 4 的按键映射，已打开手势键检查器"></td>
-    </tr>
-    <tr>
-        <td align="center"><b>设备</b><br><sub>所有接收器和连接方式，附电池电量</sub></td>
-        <td align="center"><b>按键与手势</b><br><sub>动作、快捷键和分方向手势</sub></td>
-    </tr>
-    <tr>
-        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/actions-ring.png" width="420" alt="Actions Ring 编辑器：光标周围的八个槽位"></td>
-        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/pointer-scrolling.png" width="420" alt="指针页：DPI、SmartShift 和滚动设置"></td>
-    </tr>
-    <tr>
-        <td align="center"><b>Actions Ring</b><br><sub>光标周围八个动作，可按应用设置</sub></td>
-        <td align="center"><b>指针与滚动</b><br><sub>DPI、SmartShift 和滚轮行为</sub></td>
-    </tr>
-</table>
+<p align="center">
+    <img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="860" alt="OpenLogi 设备列表：六台 Logitech 设备，包括鼠标、键盘和 Litra 补光灯">
+</p>
 
 ### 设备
 
 - 支持 Logi Bolt 和 Unifying 接收器、蓝牙以及有线连接，显示电池电量和充电状态
 - 电量低时在屏幕底部提示，每次放电只提示一次，不需要系统通知权限
 - 键盘切换 Caps Lock 时在屏幕上显示提示；Windows 和 Linux 上还包括 Num Lock 和 Scroll Lock
-- Easy-Switch：查看每个通道配对的电脑名称、系统和连接方式，设备允许时可以重命名
+
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/easy-switch.png" width="400" alt="Easy-Switch 卡片，列出三台已配对的电脑"></td>
+        <td width="50%"><b>Easy-Switch</b><ul><li>查看每个通道配对的电脑、系统和连接方式</li><li>设备允许时可以重命名通道</li></ul></td>
+    </tr>
+</table>
 
 ### 按键与动作
 
-- 把鼠标按键和键盘 F 键映射到内置动作、自定义快捷键、文本输入或多步工作流
-- 单击和长按可以分别设置动作；按住型组合键在松开按键时释放，适合按键说话
-- 在受支持的按键上使用手势：中键、后退和前进键、DPI 或模式切换键、手势键和触觉面板
-- Actions Ring：以光标为中心的八槽位动作环，每个应用可以有自己的布局
-- 按应用配置，随前台应用自动切换；用 `[apps]` 别名可以让同一份配置跨平台跟随一个应用
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/buttons.png" width="400" alt="MX Master 4 的按键映射，已打开手势键检查器"></td>
+        <td width="50%"><b>重新映射任意按键</b><ul><li>内置动作、自定义快捷键、文本输入或多步工作流</li><li>单击和长按可以分别设置动作；按住型组合键在松开按键时释放，适合按键说话</li><li>在中键、后退和前进键、DPI 或模式切换键、手势键和触觉面板上使用手势</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/actions-ring.png" width="400" alt="Actions Ring 编辑器：光标周围的八个槽位"></td>
+        <td width="50%"><b>Actions Ring</b><ul><li>光标周围一圈八个动作</li><li>每个应用可以有自己的布局</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys.png" width="400" alt="MX Keys S 上三个按键分别绑定到启动台、锁定屏幕和截屏"></td>
+        <td width="50%"><b>键盘按键</b><ul><li>像鼠标按键一样绑定媒体、表情、截屏等专用键</li><li>可以把单个按键恢复为设备默认，或重置整排按键</li></ul></td>
+    </tr>
+</table>
+
+按应用配置随前台应用自动切换。用 `[apps]` 别名可以让同一份配置跨平台跟随一个应用。
 
 ### 指针与滚动
 
-- DPI 预设，支持循环切换和切到指定预设，另有指针速度和回报率
-- Precision Mode：一个按键把鼠标切到最低速度，再按一次切回
-- SmartShift：模式、灵敏度，SmartShift Enhanced 鼠标还可调滚动力度
-- 按设备反转滚动方向，设备支持时原生实现，否则由软件实现；另有平滑滚轮
-- 在没有拇指滚轮的鼠标上，按住后退或前进键再滚动主滚轮即可横向滚动
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/dpi.png" width="400" alt="指针调节卡片，带 DPI 滑块"></td>
+        <td width="50%"><b>指针</b><ul><li>DPI 预设，支持循环切换和切到指定预设</li><li>指针速度和回报率</li><li>精准模式：一个按键把鼠标切到最低速度，再按一次切回</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/smartshift.png" width="400" alt="SmartShift 卡片：滚轮模式、灵敏度和滚动力度"></td>
+        <td width="50%"><b>SmartShift</b><ul><li>滚轮模式和灵敏度</li><li>SmartShift Enhanced 鼠标可调滚动力度</li><li>永久棘轮开关</li></ul></td>
+    </tr>
+    <tr>
+        <td colspan="2"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/scrolling.png" width="820" alt="滚动卡片：反转方向、滚轮分辨率和平滑滚轮"><br><b>滚动</b><ul><li>按设备反转滚动方向，设备支持时原生实现，否则由软件实现</li><li>滚轮分辨率和平滑滚轮</li><li>在没有拇指滚轮的鼠标上，按住后退或前进键再滚动主滚轮即可横向滚动</li></ul></td>
+    </tr>
+</table>
 
 ### 键盘与灯光
 
-- 多平台键盘保持当前系统的布局；可以把单个按键恢复为设备默认，或重置整排 F 键
-- 键盘背光：亮度档位、自动亮度和省电模式，调整时在屏幕上显示档位
-- 受支持键盘的静态 RGB 灯光
-- Litra 补光灯：开关、亮度和色温；可以跟随摄像头活动自动开关，在灯上直接做的调整也会保存
+<table>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/keys-backlight.png" width="400" alt="MX Keys S 的按键和背光卡片"></td>
+        <td width="50%"><b>键盘</b><ul><li>Fn Lock；多平台键盘保持当前系统的布局</li><li>背光档位、自动亮度和省电模式</li><li>调整背光时在屏幕上显示档位</li><li>受支持键盘的静态 RGB 灯光</li></ul></td>
+    </tr>
+    <tr>
+        <td width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/cards/litra.png" width="400" alt="Litra Glow 灯光面板：亮度和色温"></td>
+        <td width="50%"><b>Litra 补光灯</b><ul><li>开关、亮度和色温</li><li>可以跟随摄像头自动开灯</li><li>在灯上直接做的调整也会保存</li></ul></td>
+    </tr>
+</table>
 
 ### 摄像头
 
