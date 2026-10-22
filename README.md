@@ -75,42 +75,80 @@ Things OpenLogi does that Options+ won't:
 - **Run on Linux.** Linux is a first-class platform in OpenLogi.
 - **Gestures on supported buttons.** Assign gesture actions to supported controls — or turn gestures off entirely.
 - **Plain-text config.** Everything is one TOML file you can sync between machines however you like.
-- **Script it.** A real CLI alongside the GUI, with [hardware diagnostics](docs/USAGE.md) for DPI, pointer scaling, and SmartShift.
+- **Script it.** A real CLI alongside the GUI: a JSON [automation API](docs/USAGE.md#automation-api) for DPI, SmartShift, Fn-lock, and report rate, plus hardware diagnostics.
 
 ## Features
 
-- Devices connected over Logi Bolt receivers, Unifying receivers, Bluetooth, or a wired connection, with battery percentage and charge state
-- Low-battery notices at the bottom of the screen, once per discharge, without an OS notification permission (on by default; Settings › General)
-- An on-screen indicator when a keyboard turns Caps Lock on or off, and Num Lock or Scroll Lock on Windows and Linux (`0x4220`, supported keyboards; on by default; Settings › General)
-- Easy-Switch channels: the name, OS, and connection of the computer paired on each channel, with a rename on devices that allow it (`0x1815`, supported devices)
-- Button remapping via the OS input hook: a built-in action catalog plus custom keyboard shortcuts authored in the TOML config, including independent short/long-press actions and hold-until-release chords for push-to-talk¹
-- Per-application profile overlays that auto-switch on app focus (macOS + Windows; Linux on X11 / XWayland only); an `[apps]` alias lets one profile follow an application across platforms
-- Litra lights: power, brightness, and color temperature, with optional auto power that follows camera activity
+<table>
+    <tr>
+        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/devices-grid.png" width="420" alt="Device list with four Logitech mice and their connections"></td>
+        <td align="center" width="50%"><img src="https://assets.openlogi.org/screenshots/macos/light/buttons-gestures.png" width="420" alt="Button mapping for an MX Master 4, with the gesture button inspector open"></td>
+    </tr>
+    <tr>
+        <td align="center"><b>Devices</b><br><sub>Every receiver and connection, with battery level</sub></td>
+        <td align="center"><b>Buttons and gestures</b><br><sub>Actions, shortcuts, and per-direction gestures</sub></td>
+    </tr>
+    <tr>
+        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/actions-ring.png" width="420" alt="Actions Ring editor with eight slots around the cursor"></td>
+        <td align="center"><img src="https://assets.openlogi.org/screenshots/macos/light/pointer-scrolling.png" width="420" alt="Pointer tab with DPI, SmartShift, and scrolling settings"></td>
+    </tr>
+    <tr>
+        <td align="center"><b>Actions Ring</b><br><sub>Eight actions around the cursor, per application</sub></td>
+        <td align="center"><b>Pointer and scrolling</b><br><sub>DPI, SmartShift, and wheel behavior</sub></td>
+    </tr>
+</table>
 
-**Mouse**
+### Devices
 
-- Capture and remap the middle, mode-shift, and thumbwheel buttons (middle everywhere, the rest where the device exposes them)
-- Per-direction gesture bindings with live capture on supported buttons: Middle Click, Back/Forward, DPI/ModeShift, the dedicated gesture button, and the haptic panel
-  - DPI/ModeShift gestures require device-reported diversion and raw-XY support.
-  - Primary clicks and wheel rotation/tilt cannot be newly assigned gestures.
-- Actions Ring: a cursor-centred, eight-slot overlay of actions (`ShowActionsRing`), with per-application layouts
-- DPI control with presets and Cycle / Set-preset actions (`0x2201`)
-- SmartShift wheel: mode toggle, sensitivity, and a permanent-ratchet panel (`0x2111`)
-- Per-device native scroll inversion (`0x2121`, supported devices)
+- Logi Bolt and Unifying receivers, Bluetooth, and wired connections, with battery level and charge state
+- Low-battery notices at the bottom of the screen, once per discharge, with no OS notification permission
+- An on-screen indicator when a keyboard turns Caps Lock on or off, plus Num Lock and Scroll Lock on Windows and Linux
+- Easy-Switch: see which computer is paired on each channel, with its OS and connection, and rename it on devices that allow it
 
-**Keyboard**
+### Buttons and actions
 
-- Global F-key remapping: the same action catalog as the mouse, plus power-user actions — typed text, key combos, multi-step workflows (macOS + Windows)
-- Static RGB lighting (`0x8070` / `0x8080`, supported devices)
+- Remap mouse buttons and keyboard F-keys to a built-in action catalog, custom shortcuts, typed text, or multi-step workflows
+- Separate tap and hold actions, and hold-to-talk chords that release with the button
+- Gestures on supported buttons: Middle Click, Back/Forward, DPI/ModeShift, the gesture button, and the haptic panel
+- Actions Ring: an eight-slot overlay around the cursor, with its own layout per application
+- Per-application profiles that switch with the focused app; an `[apps]` alias lets one profile follow an application across platforms
 
-**Camera**
+### Pointer and scrolling
+
+- DPI presets with cycle and set-preset actions, pointer speed, and report rate
+- Precision Mode: one button switches the mouse to its slowest speed and back
+- SmartShift: mode, sensitivity, and scrolling force on SmartShift Enhanced mice
+- Scroll inversion per device, natively or in software, plus smooth wheel scrolling
+- Hold Back or Forward and roll the wheel to scroll sideways on mice without a thumb wheel
+
+### Keyboard and lighting
+
+- Multi-platform keyboards stay on the host OS layout; restore one key to its device default, or reset the whole row
+- Keyboard backlight: level, automatic brightness, and battery saving, with an on-screen level indicator
+- Static RGB on supported keyboards
+- Litra lights: power, brightness, and color temperature; follows camera activity if you want, and keeps changes made on the light itself
+
+### Webcams
 
 - Any Logitech UVC webcam (Brio, StreamCam, the C920 series, …), plug and play
-- Live preview that opens the camera only while you watch — leaving it releases the camera entirely and the LED goes off
-- Image controls written straight to the UVC hardware — zoom, pan, tilt, focus, exposure, brightness, contrast, saturation, sharpness, gain, backlight compensation, white balance, tint, anti-flicker, and low-light compensation, with auto-mode toggles for focus / exposure / white balance — so changes apply in Meet / Zoom / OBS and every other app using the camera
-- One-click profiles: built-in Default / Streaming / Video call plus custom snapshots; settings persist per camera and are written back to the hardware on the next view
+- Live preview that holds the camera only while you watch; leave it and the LED goes off
+- Zoom, pan, tilt, focus, exposure, white balance, and every other UVC control, written to the hardware so Meet, Zoom, and OBS see the change
+- Built-in Default / Streaming / Video call profiles plus your own snapshots, kept per camera
 
-¹ Media key actions use D-Bus MPRIS on Linux; a handful of macOS-specific actions have no universal Linux equivalent and are no-ops. Windows maps platform actions to native equivalents where available.
+Feature coverage depends on what each device reports; the app shows only the controls a device supports.
+
+### Platform support
+
+| Feature | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| Mouse button remapping and gestures | ✓ | ✓ | ✓ |
+| Keyboard F-key remapping | ✓ | ✓ | — |
+| Per-application profiles | ✓ | ✓ | X11, wlroots (sway, Hyprland), GNOME with the [companion extension](crates/openlogi-hook/gnome-shell-extension/README.md) |
+| Mouse profile follows the window under the pointer | ✓ | ✓ | X11 only |
+| Media keys | Native | Native | D-Bus MPRIS |
+| Window-manager actions (desktops, Mission Control, …) | Native | Native equivalents | GNOME, KDE (KWin), Hyprland; some macOS-only actions do nothing |
+| Menu-bar / tray icon | ✓ | ✓ | — |
+| In-app updates | Sparkle | Built-in | Built-in |
 
 ## Install
 
@@ -121,7 +159,7 @@ Things OpenLogi does that Options+ won't:
 
 Requires macOS 13 or later.
 
-Download the signed, notarized `.dmg` from the [latest release](https://github.com/AprilNEA/OpenLogi/releases/latest) and drag `OpenLogi.app` to `/Applications`.
+Download the signed, notarized `.dmg` from the [latest release](https://github.com/AprilNEA/OpenLogi/releases/latest) and drag `OpenLogi.app` to `/Applications`. The app updates itself through Sparkle when update checks are on in Settings → Updates.
 
 Or install via [Homebrew](https://brew.sh):
 
@@ -157,72 +195,9 @@ sh openlogi-install.sh
 rm openlogi-install.sh
 ```
 
-The script detects apt, dnf, yum, zypper, rpm, or pacman; selects the exact
-`.deb`, `.rpm`, or `.pkg.tar.zst` for the machine; authenticates its detached
-signature with OpenLogi's embedded minisign public key; and verifies its entry
-in the release `SHA256SUMS` before invoking the package manager with `sudo`.
-Install `minisign` through your distribution first. Run the script as your
-normal user, not with `sudo`. It installs the latest release by default. Use
-`--version`, `--package-manager`, `--no-start`, or `--dry-run` when needed.
+The script picks the right `.deb`, `.rpm`, or `.pkg.tar.zst` for your package manager and architecture, verifies its minisign signature and checksum, installs udev rules, and starts the agent as a user service. Install `minisign` first and run the script as your normal user, not with `sudo`. Packages exist for `x86_64` and `arm64` and need GLIBC 2.35 or newer.
 
-Packages are published for both `x86_64`/`amd64` and `arm64`/`aarch64`.
-Pre-built packages require GLIBC 2.35 or newer (Ubuntu 22.04 baseline).
-
-Each release also carries a Flatpak bundle, for `amd64` and `arm64`:
-
-```sh
-flatpak install --user ./openlogi-*.flatpak
-```
-
-It is a one-time install: there is no remote behind it, so `flatpak update` has
-nothing to check and a new version means downloading the next bundle.
-
-A Flatpak cannot write to `/etc`, so its udev rules go on the host separately.
-They ship inside the application, so this needs no extra download:
-
-```sh
-flatpak run --command=cat org.openlogi.OpenLogi /app/share/openlogi/udev/70-openlogi.rules | sudo tee /etc/udev/rules.d/70-openlogi.rules >/dev/null && sudo udevadm control --reload-rules && sudo udevadm trigger
-```
-
-Until that runs, no devices are detected at all. Nothing extra is needed for
-`/dev/uinput`: the rules create its node at boot with `static_node=uinput`, and
-opening it loads the module. The agent is launched by the application itself, so
-unlike the packages below there is no user service to enable.
-
-NixOS users can instead import the repository's module, which installs the
-package and udev rules and starts the agent with the graphical session:
-
-```nix
-{
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.openlogi = {
-    url = "github:AprilNEA/OpenLogi";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-
-  outputs = { nixpkgs, openlogi, ... }: {
-    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux"; # or aarch64-linux
-      modules = [
-        openlogi.nixosModules.default
-        { programs.openlogi.enable = true; }
-      ];
-    };
-  };
-}
-```
-
-All Linux packages install udev rules that grant your user access to
-`/dev/hidraw*`, `/dev/uinput` and your Logitech mouse's `/dev/input/event*`
-node without `sudo`. The installer and NixOS module start the agent
-automatically; after a manual package installation, enable it for your user:
-
-```sh
-systemctl --user enable --now openlogi-agent.service
-```
-
-See [docs/INSTALL-linux.md](docs/INSTALL-linux.md) for fixed-version installs,
-complete NixOS options, source installs, and distros without systemd.
+Each release also carries a Flatpak bundle, and the repository provides a NixOS module. See [docs/INSTALL-linux.md](docs/INSTALL-linux.md) for both, fixed-version and source installs, distros without systemd, and Hyprland/Omarchy notes.
 
 ### Windows
 
@@ -238,9 +213,7 @@ install, in-place upgrade, and uninstall of the MSI. It is newer than the
 macOS build, so if you hit a rough edge please
 [report it](https://github.com/AprilNEA/OpenLogi/issues). The agent shows a
 system-tray icon (Show Main Window / Quit) so the app stays reachable after
-the main window is closed. To disable it on Windows, set
-`show_in_menu_bar = false` in the TOML `[app_settings]` block and restart the
-agent; the GUI toggle is currently macOS-only.
+the main window is closed; turn it off in Settings → General.
 
 To build from source, see [DEVELOPMENT.md](docs/DEVELOPMENT.md).
 

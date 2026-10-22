@@ -321,5 +321,5 @@ use the keyboard fallbacks above.
 
 | Limitation | Status |
 |---|---|
-| Wayland: per-application profile switching | Requires XWayland (`WM_CLASS` lookup uses X11) |
+| Wayland: per-application profile switching | Native on wlroots compositors (sway, Hyprland, …); GNOME needs the [companion extension](../crates/openlogi-hook/gnome-shell-extension/README.md); KDE falls back to XWayland. wlroots reports the xdg-shell `app_id` while X11 and GNOME report `WM_CLASS`, so a profile keyed under one does not match under the other |
 | Button capture: middle / mode-shift / thumbwheel | Side buttons only today |
