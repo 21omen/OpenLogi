@@ -169,71 +169,51 @@ Las funciones disponibles dependen de lo que informe cada dispositivo; la aplica
 ## Instalación
 
 > [!IMPORTANT]
-> Cierra antes **Logi Options+**: las dos aplicaciones se pelean por el acceso HID++ y un receptor solo puede pertenecer a una a la vez.
+> Cierra antes **Logi Options+** (y Solaar en Linux). Un receptor solo puede pertenecer a una aplicación a la vez.
+
+Requisitos: macOS 13 o posterior; Linux en x86_64 o arm64 con GLIBC 2.35 o superior; Windows en x86_64 o arm64. Cada descarga lleva una firma minisign y una entrada en `SHA256SUMS`. Para compilar desde el código fuente, consulta [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 
-Requiere macOS 13 o posterior.
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="Descargar para Mac: Apple silicon (.dmg)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="Descargar para Mac: Intel (.dmg)"></a>
+</p>
 
-Descarga el `.dmg` firmado y notarizado desde la [última release](https://github.com/AprilNEA/OpenLogi/releases/latest) y arrastra `OpenLogi.app` a `/Applications`. La aplicación se actualiza sola mediante Sparkle si activas la búsqueda de actualizaciones en Ajustes → Actualizaciones.
-
-O instálalo con [Homebrew](https://brew.sh):
+O con Homebrew:
 
 ```sh
 brew install --cask openlogi
 ```
 
-El cask oficial de Homebrew es la vía de instalación por defecto. Si prefieres
-seguir explícitamente la última release de GitHub desde `aprilnea/tap`:
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-De `openlogi@latest` se encarga el flujo de publicación de OpenLogi, y puede
-actualizarse antes de que el cask oficial se ponga al día. Instala `openlogi` o
-`openlogi@latest`, pero no los dos.
+Abre OpenLogi y concede **Accesibilidad** y **Monitorización de los dispositivos de entrada** cuando macOS lo pida. A partir de ahí, OpenLogi se actualiza solo mediante Sparkle.
 
 ### Linux
 
-Descarga el instalador por HTTPS, revísalo y luego ejecútalo. No lo pases
-directamente a una shell con una tubería:
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="Descargar para Linux: Debian, Ubuntu (.deb)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="Descargar para Linux: Fedora, SUSE (.rpm)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="Descargar para Linux: Arch (.pkg.tar.zst)"></a>
+</p>
+
+O instala el paquete adecuado para tu distribución con un solo comando. Verifica la firma minisign y arranca el agente; instala antes `minisign`:
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-El script elige el `.deb`, `.rpm` o `.pkg.tar.zst` adecuado para tu gestor de paquetes y tu arquitectura, verifica su firma minisign y su suma de comprobación, instala las reglas de udev y arranca el agente como servicio de usuario. Instala antes `minisign` y ejecuta el script con tu usuario normal, no con `sudo`. Hay paquetes para `x86_64` y `arm64`, y necesitan GLIBC 2.35 o superior.
-
-Cada release incluye también un paquete Flatpak, y el repositorio ofrece un módulo de NixOS. En [INSTALL-linux.md](INSTALL-linux.md) tienes ambos, la instalación de una versión fija o desde el código fuente, las distribuciones sin systemd y notas para Hyprland/Omarchy.
+Para revisar el script antes de ejecutarlo, y para Flatpak, NixOS y distribuciones sin systemd, consulta [INSTALL-linux.md](INSTALL-linux.md).
 
 ### Windows
 
-Cada release incluye archivos `.zip` portables firmados e instaladores `.msi`
-por usuario (x86_64 y arm64). Ambos traen la interfaz gráfica (`OpenLogi.exe`)
-junto al agente en segundo plano (`openlogi-agent.exe`), que es quien gestiona
-toda la E/S con los dispositivos. Si usas el zip portable, mantén los dos
-ficheros juntos o la interfaz no tendrá a qué conectarse.
-
-La compatibilidad con Windows se ha validado de principio a fin en Windows 11
-con hardware real (un teclado por cable y un ratón con receptor Unifying),
-incluidas la instalación, la actualización sobre la anterior y la desinstalación
-del MSI. Es más reciente que la versión de macOS, así que
-[avísanos](https://github.com/AprilNEA/OpenLogi/issues) si te encuentras alguna
-aspereza. El agente muestra un icono en el área de notificación (Mostrar ventana
-principal / Salir de OpenLogi) para que la aplicación siga a mano después de
-cerrar la ventana principal; puedes desactivarlo en Ajustes → General.
-
-Para compilar desde el código fuente, consulta [DEVELOPMENT.md](DEVELOPMENT.md).
-
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="Descargar para Windows: instalador (.msi)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="Descargar para Windows: portable (.zip)"></a>
+</p>
 
 ## Uso (CLI)
 

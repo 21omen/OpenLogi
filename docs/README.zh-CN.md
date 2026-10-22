@@ -170,55 +170,51 @@ OpenLogi 能做、而 Options+ 做不到的事：
 ## 安装
 
 > [!IMPORTANT]
-> 先退出 **Logi Options+**：两者会争夺 HID++ 访问权，同一个接收器同时只能由一方占用。
+> 先退出 **Logi Options+**（Linux 上还有 Solaar）。同一个接收器同时只能由一个应用占用。
+
+系统要求：macOS 13 或更高版本；Linux 为 x86_64 或 arm64，GLIBC 2.35 或更高版本；Windows 为 x86_64 或 arm64。每个下载文件都带 minisign 签名，并在 `SHA256SUMS` 中有对应条目。从源码构建见 [DEVELOPMENT.md](DEVELOPMENT.md)。
 
 ### macOS
 
-需要 macOS 13 或更高版本。
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="下载 Mac 版：Apple 芯片（.dmg）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="下载 Mac 版：Intel（.dmg）"></a>
+</p>
 
-从[最新 release](https://github.com/AprilNEA/OpenLogi/releases/latest) 下载已签名、已公证的 `.dmg`，把 `OpenLogi.app` 拖入 `/Applications`。在「设置 → 更新」中开启检查更新后，应用会通过 Sparkle 自动更新。
-
-也可以通过 [Homebrew](https://brew.sh) 安装：
+也可以用 Homebrew 安装：
 
 ```sh
 brew install --cask openlogi
 ```
 
-官方 Homebrew cask 是默认的安装途径。如果想改用 `aprilnea/tap` 直接跟踪 GitHub 最新 release：
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest` 由 OpenLogi 的发布工作流维护，可能比官方 cask 的自动更新先到。`openlogi` 和 `openlogi@latest` 只装一个。
+打开 OpenLogi，在 macOS 提示时授予**辅助功能**和**输入监控**权限。之后 OpenLogi 会通过 Sparkle 自动更新。
 
 ### Linux
 
-通过 HTTPS 把安装脚本下载到文件，检查后再运行，不要通过管道直接交给 shell：
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="下载 Linux 版：Debian、Ubuntu（.deb）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="下载 Linux 版：Fedora、SUSE（.rpm）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="下载 Linux 版：Arch（.pkg.tar.zst）"></a>
+</p>
+
+也可以用一条命令安装适合当前发行版的安装包。脚本会校验 minisign 签名并启动 agent；先装好 `minisign`：
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-脚本会按包管理器和架构选择对应的 `.deb`、`.rpm` 或 `.pkg.tar.zst`，验证 minisign 签名和校验和，安装 udev 规则，并把 agent 作为用户服务启动。先通过发行版安装 `minisign`，然后以普通用户运行脚本，不要用 `sudo`。安装包支持 `x86_64` 和 `arm64`，要求 GLIBC 2.35 或更高版本。
-
-每个 release 还附带 Flatpak 包，仓库也提供 NixOS 模块。这两种方式、固定版本安装、源码安装、无 systemd 的发行版以及 Hyprland 和 Omarchy 说明，见 [INSTALL-linux.md](INSTALL-linux.md)。
+想先审阅脚本再运行，或使用 Flatpak、NixOS、无 systemd 的发行版，见 [INSTALL-linux.md](INSTALL-linux.md)。
 
 ### Windows
 
-每个 release 都附带签名的便携式 `.zip` 和按用户安装的 `.msi`（x86_64 与 arm64）。两者都包含 GUI（`OpenLogi.exe`）和负责全部设备 I/O 的后台 agent（`openlogi-agent.exe`）。使用便携式 zip 时，这两个文件必须放在同一目录，否则 GUI 无法连接 agent。
-
-Windows 版已在 Windows 11 实机上完成端到端验证，硬件为一把有线键盘和一只使用 Unifying 接收器的鼠标，验证范围包括 MSI 的安装、原位升级和卸载。它比 macOS 版更新，遇到问题时请[提交反馈](https://github.com/AprilNEA/OpenLogi/issues)。agent 会显示系统托盘图标（「显示主窗口」和「退出」），关闭主窗口后仍能打开应用；在「设置 → 通用」中可以关闭该图标。
-
-从源码构建见 [DEVELOPMENT.md](DEVELOPMENT.md)。
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="下载 Windows 版：安装程序（.msi）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="下载 Windows 版：便携版（.zip）"></a>
+</p>
 
 ## 使用（CLI）
 

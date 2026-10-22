@@ -169,65 +169,51 @@
 ## Установка
 
 > [!IMPORTANT]
-> Сначала закройте **Logi Options+**: два приложения борются за доступ к HID++, и приёмник может принадлежать только одному из них.
+> Сначала закройте **Logi Options+** (а в Linux — и Solaar). Приёмник может принадлежать только одному приложению одновременно.
+
+Требования: macOS 13 или новее; Linux на x86_64 или arm64 с GLIBC 2.35 или новее; Windows на x86_64 или arm64. Каждый файл подписан minisign и указан в `SHA256SUMS`. Сборка из исходников: [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### macOS
 
-Нужен macOS 13 или новее.
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="Скачать для Mac: Apple silicon (.dmg)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="Скачать для Mac: Intel (.dmg)"></a>
+</p>
 
-Скачайте подписанный и нотаризованный `.dmg` из [последнего релиза](https://github.com/AprilNEA/OpenLogi/releases/latest) и перетащите `OpenLogi.app` в `/Applications`. Приложение обновляется само через Sparkle, если в «Настройки → Обновления» включена проверка обновлений.
-
-Или установите через [Homebrew](https://brew.sh):
+Или через Homebrew:
 
 ```sh
 brew install --cask openlogi
 ```
 
-Официальный cask Homebrew — путь установки по умолчанию. Чтобы явно следить за последним GitHub-релизом из `aprilnea/tap`:
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest` поддерживается workflow релизов OpenLogi и может обновиться раньше официального autobump cask. Ставьте либо `openlogi`, либо `openlogi@latest`, не оба сразу.
+Откройте OpenLogi и выдайте разрешения **Универсальный доступ** и **Мониторинг ввода**, когда macOS их запросит. Дальше OpenLogi обновляется сам через Sparkle.
 
 ### Linux
 
-Скачайте установщик по HTTPS, просмотрите его и только потом запускайте. Не передавайте его в shell через пайп:
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="Скачать для Linux: Debian, Ubuntu (.deb)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="Скачать для Linux: Fedora, SUSE (.rpm)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="Скачать для Linux: Arch (.pkg.tar.zst)"></a>
+</p>
+
+Или установите подходящий для вашего дистрибутива пакет одной командой. Скрипт проверяет подпись minisign и запускает агент; сначала установите `minisign`:
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-Скрипт выбирает подходящий `.deb`, `.rpm` или `.pkg.tar.zst` под ваш пакетный менеджер и архитектуру, проверяет подпись minisign и контрольную сумму, ставит правила udev и запускает агент как пользовательский сервис. Сначала установите `minisign` и запускайте скрипт от своего обычного пользователя, а не через `sudo`. Пакеты собираются для `x86_64` и `arm64` и требуют GLIBC 2.35 или новее.
-
-К каждому релизу также прилагается Flatpak-бандл, а в репозитории есть модуль NixOS. Оба варианта, установка фиксированной версии и из исходников, дистрибутивы без systemd и заметки по Hyprland/Omarchy — в [INSTALL-linux.md](INSTALL-linux.md).
+Как просмотреть скрипт перед запуском, а также Flatpak, NixOS и дистрибутивы без systemd — в [INSTALL-linux.md](INSTALL-linux.md).
 
 ### Windows
 
-К каждому релизу прилагаются подписанные портативные `.zip` и пользовательские
-установщики `.msi` (x86_64 и arm64). И то и другое включает GUI (`OpenLogi.exe`)
-и фоновый агент (`openlogi-agent.exe`), который владеет всем I/O устройств.
-В портативном zip держите оба файла рядом, иначе GUI не к чему подключаться.
-
-Поддержка Windows проверена end-to-end на Windows 11 с живым железом
-(проводная клавиатура и мышь на Unifying-приёмнике), включая установку,
-in-place обновление и удаление MSI. Сборка новее macOS, поэтому если
-натолкнётесь на шероховатость — [сообщите](https://github.com/AprilNEA/OpenLogi/issues).
-Агент показывает иконку в системном трее («Показать главное окно» / «Выйти из
-OpenLogi»), чтобы приложение оставалось доступным после закрытия главного окна;
-отключить её можно в «Настройки → Основные».
-
-Сборка из исходников: [DEVELOPMENT.md](DEVELOPMENT.md).
-
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="Скачать для Windows: установщик (.msi)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="Скачать для Windows: портативная версия (.zip)"></a>
+</p>
 
 ## Использование (CLI)
 

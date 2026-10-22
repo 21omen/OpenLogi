@@ -170,56 +170,51 @@ OpenLogi는 되고 Options+는 안 되는 것들:
 ## 설치
 
 > [!IMPORTANT]
-> 먼저 **Logi Options+** 를 종료하세요 — 두 애플리케이션은 HID++ 접근을 두고 경합하며, 하나의 수신기는 한쪽만 소유할 수 있습니다.
+> 먼저 **Logi Options+**(Linux에서는 Solaar도)를 종료하세요. 하나의 수신기는 한 번에 하나의 애플리케이션만 소유할 수 있습니다.
+
+요구 사항: macOS 13 이상, Linux는 x86_64 또는 arm64에서 GLIBC 2.35 이상, Windows는 x86_64 또는 arm64. 모든 다운로드에는 minisign 서명과 `SHA256SUMS` 항목이 함께 제공됩니다. 소스에서 빌드하려면 [DEVELOPMENT.md](DEVELOPMENT.md)를 참고하세요.
 
 ### macOS
 
-macOS 13 이상이 필요합니다.
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="Mac용 다운로드: Apple silicon (.dmg)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="Mac용 다운로드: Intel (.dmg)"></a>
+</p>
 
-[최신 릴리스](https://github.com/AprilNEA/OpenLogi/releases/latest)에서 서명·공증된 `.dmg`를 내려받아 `OpenLogi.app`을 `/Applications`로 드래그하세요. 설정 → 업데이트에서 업데이트 확인을 켜 두면 앱이 Sparkle로 스스로 업데이트합니다.
-
-또는 [Homebrew](https://brew.sh)로 설치:
+또는 Homebrew로 설치:
 
 ```sh
 brew install --cask openlogi
 ```
 
-공식 Homebrew cask가 기본 설치 경로입니다. 대신 `aprilnea/tap`으로 GitHub 최신 릴리스를 명시적으로 따라가려면:
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest`는 OpenLogi 릴리스 워크플로가 관리하며 공식 cask의 autobump보다 먼저 갱신될 수 있습니다. `openlogi`와 `openlogi@latest` 중 하나만 설치하세요.
+OpenLogi를 열고 macOS가 요청하면 **손쉬운 사용**과 **입력 모니터링** 권한을 허용하세요. 이후 OpenLogi는 Sparkle로 스스로 업데이트합니다.
 
 ### Linux
 
-설치 스크립트를 HTTPS로 내려받아 내용을 확인한 뒤 실행하세요. 셸로 바로 파이프하지 마세요:
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="Linux용 다운로드: Debian, Ubuntu (.deb)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="Linux용 다운로드: Fedora, SUSE (.rpm)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="Linux용 다운로드: Arch (.pkg.tar.zst)"></a>
+</p>
+
+또는 명령 하나로 배포판에 맞는 패키지를 설치할 수 있습니다. 스크립트는 minisign 서명을 검증하고 agent를 시작합니다. 먼저 `minisign`을 설치하세요:
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-스크립트는 패키지 관리자와 아키텍처에 맞는 `.deb`, `.rpm`, `.pkg.tar.zst`를 고르고, minisign 서명과 체크섬을 검증하고, udev 규칙을 설치한 뒤 agent를 사용자 서비스로 시작합니다. 먼저 `minisign`을 설치하고, `sudo` 없이 일반 사용자로 스크립트를 실행하세요. 패키지는 `x86_64`와 `arm64`용으로 제공되며 GLIBC 2.35 이상이 필요합니다.
-
-각 릴리스에는 Flatpak 번들도 포함되며, 저장소는 NixOS 모듈도 제공합니다. 두 방식, 특정 버전 고정 및 소스 설치, systemd가 없는 배포판, Hyprland/Omarchy 관련 참고 사항은 [INSTALL-linux.md](INSTALL-linux.md)를 참고하세요.
+실행 전에 스크립트를 확인하는 방법과 Flatpak, NixOS, systemd가 없는 배포판에 대해서는 [INSTALL-linux.md](INSTALL-linux.md)를 참고하세요.
 
 ### Windows
 
-각 릴리스에는 서명된 휴대용 `.zip` 아카이브와 사용자별 `.msi` 설치 파일(x86_64 및 arm64)이 포함됩니다. 둘 다 GUI(`OpenLogi.exe`)와 모든 기기 I/O를 소유하는 백그라운드 agent(`openlogi-agent.exe`)를 함께 제공합니다. 휴대용 zip을 사용할 때 두 파일을 같은 위치에 두지 않으면 GUI가 연결할 대상이 없습니다.
-
-Windows 지원은 유선 키보드와 Unifying 수신기 마우스를 사용해 MSI 설치, 인플레이스 업그레이드, 제거까지 Windows 11 실제 하드웨어에서 엔드투엔드 검증했습니다. macOS 빌드보다 최신이므로 문제가 있으면 [제보](https://github.com/AprilNEA/OpenLogi/issues)해 주세요. agent는 시스템 트레이 아이콘(메인 창 표시 / 종료)을 표시하므로 메인 창을 닫은 뒤에도 앱에 접근할 수 있습니다. 트레이 아이콘은 설정 → 일반에서 끌 수 있습니다.
-
-소스에서 빌드하려면 [DEVELOPMENT.md](DEVELOPMENT.md)를 참고하세요.
-
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="Windows용 다운로드: 설치 프로그램 (.msi)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="Windows용 다운로드: 휴대용 (.zip)"></a>
+</p>
 
 ## 사용법 (CLI)
 

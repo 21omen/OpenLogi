@@ -169,56 +169,51 @@ Uygulama başına profiller, odaktaki uygulamayla birlikte değişir. Bir `[apps
 ## Kurulum
 
 > [!IMPORTANT]
-> Önce **Logi Options+**'tan çıkın: iki uygulama da HID++ erişimi için rekabet eder ve bir alıcıyı aynı anda yalnızca biri kullanabilir.
+> Önce **Logi Options+**'tan (Linux'ta Solaar'dan da) çıkın. Bir alıcıyı aynı anda yalnızca bir uygulama kullanabilir.
+
+Gereksinimler: macOS 13 veya üzeri; GLIBC 2.35 veya daha yenisine sahip x86_64 ya da arm64 Linux; x86_64 ya da arm64 Windows. Her indirmenin bir minisign imzası ve `SHA256SUMS` içinde bir girdisi vardır. Kaynaktan derlemek için [DEVELOPMENT.md](DEVELOPMENT.md)'ye bakın.
 
 ### macOS
 
-macOS 13 veya üzeri gerektirir.
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="Mac için indir: Apple silicon (.dmg)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="Mac için indir: Intel (.dmg)"></a>
+</p>
 
-İmzalı ve notarize edilmiş `.dmg` dosyasını [son sürümden](https://github.com/AprilNEA/OpenLogi/releases/latest) indirip `OpenLogi.app`'i `/Applications`'a sürükleyin. Ayarlar → Güncellemeler bölümünde güncelleme denetimi açıksa uygulama kendini Sparkle ile günceller.
-
-Veya [Homebrew](https://brew.sh) ile kurun:
+Veya Homebrew ile:
 
 ```sh
 brew install --cask openlogi
 ```
 
-Resmi Homebrew cask'i varsayılan kurulum yoludur. `aprilnea/tap`'ten en son GitHub sürümünü doğrudan takip etmek isterseniz:
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest`, OpenLogi'nin release iş akışı tarafından yönetilir ve resmi cask'in otomatik güncellemesinden önce güncellenebilir. `openlogi` veya `openlogi@latest`'ten yalnızca birini kurun, ikisini birden değil.
+OpenLogi'yi açın ve macOS sorduğunda **Erişilebilirlik** ve **Girdi İzleme** izinlerini verin. Ardından OpenLogi kendini Sparkle ile günceller.
 
 ### Linux
 
-Kurulum betiğini HTTPS üzerinden indirin, inceleyin, sonra çalıştırın. Doğrudan bir kabuğa (shell) pipe'lamayın:
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="Linux için indir: Debian, Ubuntu (.deb)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="Linux için indir: Fedora, SUSE (.rpm)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="Linux için indir: Arch (.pkg.tar.zst)"></a>
+</p>
+
+Veya dağıtımınıza uygun paketi tek bir komutla kurun. Komut minisign imzasını doğrular ve ajanı başlatır; önce `minisign`'ı kurun:
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-Betik, paket yöneticinize ve mimarinize uygun `.deb`, `.rpm` ya da `.pkg.tar.zst` dosyasını seçer, minisign imzasını ve sağlama toplamını doğrular, udev kurallarını kurar ve ajanı kullanıcı servisi olarak başlatır. Önce `minisign`'ı kurun ve betiği `sudo` ile değil, normal kullanıcınızla çalıştırın. Paketler `x86_64` ve `arm64` için mevcuttur ve GLIBC 2.35 veya daha yenisini gerektirir.
-
-Her sürümde ayrıca bir Flatpak paketi bulunur ve depo bir NixOS modülü sağlar. Her ikisi, sabit sürüm ve kaynaktan kurulum, systemd olmayan dağıtımlar ve Hyprland/Omarchy notları için [INSTALL-linux.md](INSTALL-linux.md)'ye bakın.
+Betiği çalıştırmadan önce okumak ve Flatpak, NixOS ile systemd olmayan dağıtımlar için [INSTALL-linux.md](INSTALL-linux.md)'ye bakın.
 
 ### Windows
 
-İmzalı taşınabilir `.zip` arşivleri ve kullanıcı başına `.msi` kurulum dosyaları (x86_64 ve arm64) her sürüme eklenir. Her ikisi de arayüzü (`OpenLogi.exe`) tüm cihaz G/Ç'sini üstlenen arka plan ajanıyla (`openlogi-agent.exe`) birlikte içerir. Taşınabilir zip'i kullanırken iki dosyayı aynı klasörde tutun, aksi halde arayüzün bağlanacağı bir şey olmaz.
-
-Windows desteği, gerçek donanımla (kablolu bir klavye ve Unifying alıcılı bir fare) Windows 11'de kurulum, yerinde güncelleme ve MSI kaldırma dahil uçtan uca doğrulanmıştır. macOS yapısından daha yenidir; sorunla karşılaşırsanız lütfen [bildirin](https://github.com/AprilNEA/OpenLogi/issues). Ajan, ana pencere kapatıldıktan sonra uygulamaya erişimi sürdürmek için sistem tepsisinde bir simge gösterir (Ana pencereyi göster / OpenLogi'den çık); bu simgeyi Ayarlar → Genel bölümünden kapatabilirsiniz.
-
-Kaynaktan derlemek için [DEVELOPMENT.md](DEVELOPMENT.md)'ye bakın.
-
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="Windows için indir: kurulum dosyası (.msi)"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="Windows için indir: taşınabilir (.zip)"></a>
+</p>
 
 ## Kullanım (CLI)
 

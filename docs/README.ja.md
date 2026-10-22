@@ -170,56 +170,51 @@ OpenLogi にできて Options+ にできないこと：
 ## インストール
 
 > [!IMPORTANT]
-> 先に **Logi Options+** を終了してください —— 両者は HID++ アクセスを奪い合い、1 つのレシーバーを同時に所有できるのは片方だけです。
+> 先に **Logi Options+**（Linux では Solaar も）を終了してください。1 つのレシーバーを同時に所有できるアプリケーションは 1 つだけです。
+
+動作要件：macOS 13 以降、Linux は x86_64 または arm64 で GLIBC 2.35 以降、Windows は x86_64 または arm64。すべてのダウンロードには minisign 署名と `SHA256SUMS` のエントリが付属します。ソースからのビルドは [DEVELOPMENT.md](DEVELOPMENT.md) を参照してください。
 
 ### macOS
 
-macOS 13 以降が必要です。
+<p>
+    <a href="https://openlogi.org/download/mac-arm64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-arm64.png" width="260" alt="Mac 版をダウンロード：Apple silicon（.dmg）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/mac-x64"><img src="https://assets.openlogi.org/brand/buttons/download-macos-x64.png" width="260" alt="Mac 版をダウンロード：Intel（.dmg）"></a>
+</p>
 
-[最新リリース](https://github.com/AprilNEA/OpenLogi/releases/latest)から署名・公証済みの `.dmg` をダウンロードし、`OpenLogi.app` を `/Applications` にドラッグします。「設定 → アップデート」でアップデートの確認をオンにしていれば、アプリは Sparkle で自動的に更新されます。
-
-または [Homebrew](https://brew.sh) で：
+または Homebrew で：
 
 ```sh
 brew install --cask openlogi
 ```
 
-公式 Homebrew cask が標準のインストール経路です。代わりに `aprilnea/tap` で GitHub の最新リリースを明示的に追うには：
-
-```sh
-brew tap aprilnea/tap
-brew install --cask aprilnea/tap/openlogi@latest
-```
-
-`openlogi@latest` は OpenLogi のリリースワークフローが管理しており、公式 cask の autobump より先に更新されることがあります。`openlogi` か `openlogi@latest` のどちらか一方だけをインストールしてください。
+OpenLogi を開き、macOS に求められたら **アクセシビリティ** と **入力監視** を許可してください。以降、OpenLogi は Sparkle で自動的に更新されます。
 
 ### Linux
 
-インストーラーを HTTPS でダウンロードし、中身を確認してから実行してください。シェルへのパイプは使わないでください：
+<p>
+    <a href="https://openlogi.org/download/linux"><img src="https://assets.openlogi.org/brand/buttons/download-linux-deb.png" width="260" alt="Linux 版をダウンロード：Debian、Ubuntu（.deb）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-rpm"><img src="https://assets.openlogi.org/brand/buttons/download-linux-rpm.png" width="260" alt="Linux 版をダウンロード：Fedora、SUSE（.rpm）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/linux-arch"><img src="https://assets.openlogi.org/brand/buttons/download-linux-arch.png" width="260" alt="Linux 版をダウンロード：Arch（.pkg.tar.zst）"></a>
+</p>
+
+または、1 つのコマンドでディストリビューションに合ったパッケージをインストールできます。スクリプトは minisign 署名を検証し、agent を起動します。事前に `minisign` をインストールしてください：
 
 ```sh
-curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
-  --fail --location --silent --show-error \
-  --retry 3 --retry-connrefused \
-  --output openlogi-install.sh \
-  https://raw.githubusercontent.com/AprilNEA/OpenLogi/master/packaging/linux/install.sh
-less openlogi-install.sh
-sh openlogi-install.sh
-rm openlogi-install.sh
+curl -fsSL https://github.com/AprilNEA/OpenLogi/releases/latest/download/install.sh | sh
 ```
 
-スクリプトはパッケージマネージャーとアーキテクチャに合った `.deb`、`.rpm`、`.pkg.tar.zst` を選び、minisign 署名とチェックサムを検証し、udev ルールをインストールして、agent をユーザーサービスとして起動します。事前に `minisign` をインストールし、`sudo` を付けずに通常ユーザーで実行してください。パッケージは `x86_64` と `arm64` 向けに提供され、GLIBC 2.35 以降が必要です。
-
-各リリースには Flatpak バンドルも付属し、リポジトリでは NixOS モジュールも提供しています。両者の使い方、バージョン固定やソースからのインストール、systemd のないディストリビューション、Hyprland / Omarchy での注意点は [INSTALL-linux.md](INSTALL-linux.md) を参照してください。
+実行前にスクリプトを確認する方法や、Flatpak、NixOS、systemd のないディストリビューションについては [INSTALL-linux.md](INSTALL-linux.md) を参照してください。
 
 ### Windows
 
-各リリースには署名済みポータブル `.zip` とユーザー単位の `.msi` インストーラー（x86_64 / arm64）が付属します。どちらも GUI（`OpenLogi.exe`）と、すべてのデバイス I/O を所有するバックグラウンド agent（`openlogi-agent.exe`）を同梱します。ポータブル zip では 2 ファイルを同じ場所に置いてください。そうしないと GUI は接続先を失います。
-
-Windows サポートは、有線キーボードと Unifying レシーバー接続のマウスを使い、MSI のインストール、インプレースアップグレード、アンインストールを含めて Windows 11 実機でエンドツーエンド検証済みです。macOS 版より新しいため、問題があれば[報告](https://github.com/AprilNEA/OpenLogi/issues)してください。agent はシステムトレイアイコン（メインウィンドウを表示 / 終了）を表示し、メインウィンドウを閉じてもアプリを開けます。トレイアイコンは「設定 → 一般」でオフにできます。
-
-ソースからのビルドは [DEVELOPMENT.md](DEVELOPMENT.md) を参照。
-
+<p>
+    <a href="https://openlogi.org/download/windows"><img src="https://assets.openlogi.org/brand/buttons/download-windows-msi.png" width="260" alt="Windows 版をダウンロード：インストーラー（.msi）"></a>
+    &nbsp;
+    <a href="https://openlogi.org/download/windows-zip"><img src="https://assets.openlogi.org/brand/buttons/download-windows-zip.png" width="260" alt="Windows 版をダウンロード：ポータブル（.zip）"></a>
+</p>
 
 ## 使い方（CLI）
 
