@@ -650,19 +650,52 @@ checks the workspace version of the tagged commit. A stable tag is on
 release-plz's version bump, so the workspace version must be the tag's
 version. A beta tags `master` between releases without a version bump, so the
 workspace version must be the stable release the beta follows. The command
-prints three values for the build:
+prints these values for the build:
 
 | Output | Stable `v0.8.17` | Beta `v0.8.17-beta.12` |
 | --- | --- | --- |
 | `channel` | `stable` | `beta` |
 | `version` | `0.8.17` | `0.8.17-beta.12` |
 | `build_version` | `0.8.17` | `0.8.16.12` |
+| `stamp_version` | empty | `0.8.17-beta.12` |
+
+A beta builds at its own version. Each build leg that compiles OpenLogi
+first runs `cargo xtask release stamp-version --version <stamp_version>`
+(`windows-msi` compiles nothing and has no such step). It writes
+the version into `[workspace.package]`, into the `version` of every path
+dependency and `[patch]` entry that points at a workspace crate, and into the
+workspace crates in `Cargo.lock`, and commits nothing. A dependency belongs
+to the workspace by its `path`, so a registry or git crate with a workspace
+crate's name keeps its requirement. The command fails on a requirement it
+would not write itself, such as `0.8`, before it writes anything. After
+writing, the command requires full `cargo metadata --locked` resolution and
+the requested version on every workspace crate. On failure, it tries to
+restore every file it may have written and names each file it could not
+restore. That run compiles xtask at the old version, but
+everything the leg builds after it, xtask included, sees the beta's
+`CARGO_PKG_VERSION`: the update engine's current version, the About page,
+diagnostics, `CFBundleShortVersionString`, the Linux packages and the
+AppStream release. nfpm writes a pre-release as `0.8.17~beta.12` in the deb
+and rpm. For the Arch package, `linux package` spells it `0.8.17beta.12`,
+because nfpm 2.46.3 leaves a semver pre-release out of the Arch `pkgver`;
+it reads `.PKGINFO` back to check. Each sorts below `0.8.17`. The Windows
+executables' `FILEVERSION` keeps only the first three fields (`0.8.17.0`). A
+stable tag's `stamp_version` is empty, and its legs skip the step.
+
+To try a beta's build before its tag exists, dispatch the Build workflow on
+the branch with `stamp_version` set. It builds unsigned and publishes
+nothing. It is not quite a tag's build: without a `build_version`, the macOS
+bundles' `CFBundleVersion` is the stamped version and the MSI's
+`ProductVersion` is `0.0.0`. Sparkle would read `0.8.18-beta.1` as `0.8.18`,
+so a signed stamp without a build version fails before anything builds.
 
 Sparkle and Windows Installer order releases by `build_version`. The macOS
 bundles carry it as `CFBundleVersion`, and the MSI as its `ProductVersion`. A
 beta's build version is the stable release before it plus a fourth field, the
-beta number. So it ranks above that release and below the next one. Windows
-Installer ignores the fourth field, so the MSI allows same-version upgrades.
+beta number. Sparkle ranks it above the stable release before it and below
+the next stable release. Windows Installer ignores the fourth field, so it
+treats the beta and that stable release as the same version, and the MSI
+allows same-version upgrades.
 
 The stable release before a beta is the newest stable tag reachable from the
 beta tag, and the beta's version must be above it. The beta number is the
@@ -675,17 +708,18 @@ Only `vX.Y.Z` and `vX.Y.Z-beta.N` are release tags.
 
 The publish side follows the channel. A beta becomes a GitHub prerelease and
 never the latest release. It leaves the installer site and the Homebrew cask
-as they are. Its publish composes the channel files too: the beta channel's
-`latest.json` offers it, and the appcasts gain its beta item, which only apps
-on `beta` see. The stable channel's `latest.json` keeps its bytes.
+as they are. Publishing recomposes the channel files in build-version order.
+The beta channel offers the beta with the highest build version if it is
+above the newest stable release's; otherwise it offers that stable release.
+The appcasts contain the stable item and any beta item the beta channel
+offers, and only apps on `beta` receive the beta item. The stable channel's
+`latest.json` keeps its bytes.
 
 A stable release's notes compare with the previous stable tag, so they cover
-its betas too; a beta's notes compare with the tag just before it.
+its betas too. A beta's notes compare with the highest-version release tag
+below it that its commit can reach, betas included.
 `cargo xtask release version` picks that tag and prints it as
-`previous_tag`; publish passes it to GitHub's release-notes API. The release
-workflow still stops a beta tag before the build. A beta's build carries the
-workspace version, which is the stable release it follows, so its built-in
-update engine would take the beta's own release for an update.
+`previous_tag`; publish passes it to GitHub's release-notes API.
 
 ## Crowdin translation sync
 

@@ -45,10 +45,14 @@ devenv shell -- cargo run -p xtask -- <command>
 - `release sparkle-deltas` — make verified Sparkle deltas from the newest
   earlier stable releases to a stable release's stapled DMG, with the metadata
   `release appcast` reads. A beta gets none.
-- `release version` — print a release tag's channel, version, build version
-  and the previous tag its release notes compare with as GitHub Actions
-  outputs, after checking the tagged commit's workspace version: the tag's for
-  a stable tag, and the stable release it follows for a beta.
+- `release stamp-version` — write a version into the workspace manifests and
+  the workspace crates in `Cargo.lock` before a build, uncommitted, so a beta
+  builds at its own version.
+- `release version` — print a release tag's channel, version, build version,
+  the version its build stamps (empty for a stable tag) and the previous tag
+  its release notes compare with as GitHub Actions outputs, after checking the
+  tagged commit's workspace version: the tag's for a stable tag, and the
+  stable release it follows for a beta.
 
 ### Bundle identity
 
@@ -119,14 +123,15 @@ ships its own DMG. `release appcast` and `release channels` write those feeds
 from the same module, so the URL a bundle reads and the file a release
 uploads cannot drift apart. The module also owns where a release's files and
 feed record live on the update host.
-Sparkle orders releases by `CFBundleVersion`, so every bundle carries the
-release's build version there (`--build-version`, from `release version`) and
-the crate version in `CFBundleShortVersionString`. A stable release's build
-version is its version; `support/release_tag.rs` owns the encoding.
+Sparkle orders releases by `CFBundleVersion`. When supplied, `--build-version`
+(from `release version`) sets `CFBundleVersion`; otherwise it uses the crate
+version. `CFBundleShortVersionString` always uses the crate version. A stable
+release's build version is its version; `support/release_tag.rs` owns the
+encoding.
 Signing re-signs Sparkle's `Autoupdate`, `Updater.app` and the framework, inside
 out, before the app seals them. Without the key the bundle has no Sparkle and
-the app updates through its built-in engine, which is what every non-release
-build does.
+the app updates through its built-in engine; PR builds and unsigned
+dispatches are built that way.
 
 ### The dev bundle
 
@@ -211,6 +216,8 @@ xtask/
         latest_json/tests.rs
         sparkle_deltas.rs
         sparkle_deltas/tests.rs
+        stamp_version.rs     # a beta's version, written into the workspace
+        stamp_version/tests.rs
         version.rs           # a release tag's channel, version and build version
     icon.rs                  # the icon set, and the pipeline a platform implements
     icon/
