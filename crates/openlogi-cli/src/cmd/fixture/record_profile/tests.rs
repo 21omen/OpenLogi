@@ -8,10 +8,10 @@ use openlogi_core::binding::ActionRingSlot;
 use openlogi_core::config::Lighting;
 use openlogi_core::device::DeviceInventory;
 use openlogi_core::hid::{
-    BacklightChange, BacklightControls, BacklightMode, BacklightState, BacklightStatus, Dpi,
-    DpiInfo, EasySwitchHosts, EasySwitchSlot, FnLockState, ForceSensingInfo, HostConnection,
-    LightCommand, PasskeyMethod, PointerSpeed, ReceiverSelector, ReportRate, ReportRateInfo,
-    ScrollWheelMode, SmartShiftStatus,
+    BacklightChange, BacklightControls, BacklightMode, BacklightState, BacklightStatus,
+    DisableKeysMask, DisableKeysState, Dpi, DpiInfo, EasySwitchHosts, EasySwitchSlot, FnLockState,
+    ForceSensingInfo, HostConnection, LightCommand, PasskeyMethod, PointerSpeed, ReceiverSelector,
+    ReportRate, ReportRateInfo, ScrollWheelMode, SmartShiftStatus,
 };
 use openlogi_fixture::{
     CANONICAL_DEVICE_PROFILE_JSON, SyntheticIdentityKind, classify_synthetic_identity_bytes,
@@ -23,6 +23,7 @@ use openlogi_ipc::{
     ClientKind, ConfigReloadError, ForegroundApps, Generation, Identity, InventoryHealth,
     LockKeyObservation, MonitorEvent, NoticeObservation, Observation, PROTOCOL_VERSION,
     PairingCommandError, PairingFailure, PairingPhase, PairingUpdate, RingObservation, SavedConfig,
+    SavedConfigVerdict,
 };
 use tarpc::client::RpcError;
 use tarpc::context::Context as TarpcContext;
@@ -46,6 +47,7 @@ enum ReadFamily {
     EasySwitch,
     PointerSpeed,
     ForceSensing,
+    DisableKeys,
 }
 
 #[derive(Clone)]
@@ -407,6 +409,14 @@ impl Agent for TestAgent {
         unreachable!("profile capture is read-only")
     }
 
+    async fn reload_saved_config_with_verdict(
+        self,
+        _: TarpcContext,
+        _saved: SavedConfig,
+    ) -> Result<SavedConfigVerdict, ConfigReloadError> {
+        unreachable!("profile capture is read-only")
+    }
+
     async fn observe_notices(self, _: TarpcContext, _since: Generation) -> NoticeObservation {
         unreachable!("profile capture must not inspect the overlay's notices")
     }
@@ -435,6 +445,28 @@ impl Agent for TestAgent {
         _force: u16,
     ) -> Result<ForceSensingInfo, WriteError> {
         unreachable!("profile capture must never write the press force")
+    }
+
+    async fn read_disable_keys(
+        self,
+        _: TarpcContext,
+        route: DeviceRoute,
+    ) -> Result<DisableKeysState, WriteError> {
+        self.read(
+            ReadFamily::DisableKeys,
+            &route,
+            |settings| &settings.disable_keys,
+            0x4521,
+        )
+    }
+
+    async fn set_disable_keys(
+        self,
+        _: TarpcContext,
+        _route: DeviceRoute,
+        _desired: DisableKeysMask,
+    ) -> Result<DisableKeysState, WriteError> {
+        unreachable!("profile capture must never write Disable Keys")
     }
 }
 
@@ -537,6 +569,25 @@ fn args(output: PathBuf, device: Option<&str>) -> RecordProfileArgs {
     }
 }
 
+fn assert_receiver_capture_observations(inspection: &TestAgent) {
+    // Declaring is the handshake's job in `openlogi_ipc::client`, tested there.
+    let declared = inspection.declared.lock().expect("declaration lock");
+    assert!(declared.is_empty(), "capture must not grow its own declare");
+    assert_eq!(*inspection.snapshots.lock().expect("snapshot lock"), 1);
+    let calls = inspection.calls.lock().expect("calls lock").clone();
+    assert_eq!(
+        calls.iter().map(|(family, _)| *family).collect::<Vec<_>>(),
+        [
+            ReadFamily::Dpi,
+            ReadFamily::Smartshift,
+            ReadFamily::Wheel,
+            // A mouse has no `0x1982`, so no backlight read is issued.
+            ReadFamily::Smartshift,
+            ReadFamily::DisableKeys,
+        ]
+    );
+}
+
 #[tokio::test]
 async fn receiver_capture_uses_agent_reads_and_writes_validated_profile_only() {
     let directory = tempfile::tempdir().expect("tempdir");
@@ -552,22 +603,7 @@ async fn receiver_capture_uses_agent_reads_and_writes_validated_profile_only() {
     .await
     .expect("semantic capture succeeds");
 
-    // Declaring is the handshake's job in `openlogi_ipc::client`, tested there.
-    let declared = inspection.declared.lock().expect("declaration lock");
-    assert!(declared.is_empty(), "capture must not grow its own declare");
-    assert_eq!(*inspection.snapshots.lock().expect("snapshot lock"), 1);
-    let calls = inspection.calls.lock().expect("calls lock").clone();
-    assert_eq!(
-        calls.iter().map(|(family, _)| *family).collect::<Vec<_>>(),
-        [
-            ReadFamily::Dpi,
-            ReadFamily::Smartshift,
-            ReadFamily::Wheel,
-            // A mouse has no `0x1982`, so its backlight is recorded
-            // unsupported without asking the agent.
-            ReadFamily::Smartshift,
-        ]
-    );
+    assert_receiver_capture_observations(&inspection);
 
     let bytes = std::fs::read(&output).expect("profile output");
     assert!(bytes.ends_with(b"\n"));

@@ -30,6 +30,7 @@ fn device_identity_roundtrips_and_is_iterable() {
             virtual_thumbwheel: false,
             pointer_scaling: false,
             force_sensing: false,
+            disable_keys: false,
         },
         light_capabilities: None,
         driver_id: None,

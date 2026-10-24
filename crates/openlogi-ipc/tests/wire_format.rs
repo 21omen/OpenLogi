@@ -42,19 +42,20 @@ use openlogi_core::device::{
 };
 use openlogi_core::hid::{
     BacklightChange, BacklightControls, BacklightMode, BacklightState, BacklightStatus, Click,
-    DeviceRoute, Dpi, DpiCapabilities, DpiInfo, EasySwitchHosts, EasySwitchSlot, FnLockState,
-    ForceSensingInfo, HidppFeatureErrorKind, HidppOperation, HostConnection, HostOsInfo,
-    HostOsKind, LightCommand, PasskeyMethod, ReceiverSelector, ReportRate, ReportRateInfo,
-    ScrollReportingTarget, ScrollWheelMode, SmartShiftAutoDisengage, SmartShiftMode,
-    SmartShiftStatus, SmartShiftThreshold, TunableTorque, WriteError,
+    DeviceRoute, DisableKeysMask, DisableKeysState, Dpi, DpiCapabilities, DpiInfo, EasySwitchHosts,
+    EasySwitchSlot, FnLockState, ForceSensingInfo, HidppFeatureErrorKind, HidppOperation,
+    HostConnection, HostOsInfo, HostOsKind, LightCommand, PasskeyMethod, ReceiverSelector,
+    ReportRate, ReportRateInfo, ScrollReportingTarget, ScrollWheelMode, SmartShiftAutoDisengage,
+    SmartShiftMode, SmartShiftStatus, SmartShiftThreshold, TunableTorque, WriteError,
 };
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, ActionRingPresentation, AgentRequest,
-    AgentSnapshot, AgentStatus, BacklightObservation, ChosenLight, ClientKind, ConfigReloadError,
-    ForegroundApps, FoundDevice, Identity, InventoryHealth, LockKeyChange, LockKeyObservation,
-    MonitorEvent, Notice, NoticeKind, NoticeObservation, Observation, ObservedLight,
-    PROTOCOL_VERSION, PairingCommandError, PairingFailure, PairingPhase, PairingUpdate,
-    RingObservation, SavedConfig, SecureInput, VirtualKeyboardStatus,
+    AgentResponse, AgentSnapshot, AgentStatus, BacklightObservation, ChosenLight, ClientKind,
+    ConfigReloadError, ForegroundApps, FoundDevice, Identity, InventoryHealth, LockKeyChange,
+    LockKeyObservation, MonitorEvent, Notice, NoticeKind, NoticeObservation, Observation,
+    ObservedLight, PROTOCOL_VERSION, PairingCommandError, PairingFailure, PairingPhase,
+    PairingUpdate, RingObservation, SavedConfig, SavedConfigVerdict, SecureInput,
+    VirtualKeyboardStatus,
 };
 use succession::{Compat, Run};
 
@@ -110,7 +111,7 @@ fn representative_smartshift_status() -> SmartShiftStatus {
 /// unreleased version and leave this pin alone (`crates/openlogi-ipc/AGENTS.md`).
 #[test]
 fn protocol_version_is_pinned() {
-    assert_eq!(PROTOCOL_VERSION, 40);
+    assert_eq!(PROTOCOL_VERSION, 41);
 }
 
 #[test]
@@ -335,6 +336,39 @@ fn reload_saved_config() {
         },
         "24e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\
          010d73657269616c3a414243313233000101",
+    );
+    assert_wire(&SavedConfigVerdict::Accepted, "00");
+    assert_wire(&SavedConfigVerdict::FileChangedAfterSave, "01");
+    assert_wire(
+        &Ok::<SavedConfigVerdict, ConfigReloadError>(SavedConfigVerdict::Accepted),
+        "0000",
+    );
+    assert_wire(
+        &Ok::<SavedConfigVerdict, ConfigReloadError>(SavedConfigVerdict::FileChangedAfterSave),
+        "0001",
+    );
+    assert_wire(
+        &AgentRequest::ReloadSavedConfigWithVerdict {
+            saved: SavedConfig {
+                revision: ConfigRevision::of(""),
+                chosen: vec![ChosenLight {
+                    device: "serial:ABC123".into(),
+                    power: false,
+                    brightness: true,
+                    temperature: true,
+                }],
+            },
+        },
+        "2ee3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\
+         010d73657269616c3a414243313233000101",
+    );
+    assert_wire(
+        &AgentResponse::ReloadSavedConfigWithVerdict(Ok(SavedConfigVerdict::Accepted)),
+        "2e0000",
+    );
+    assert_wire(
+        &AgentResponse::ReloadSavedConfigWithVerdict(Ok(SavedConfigVerdict::FileChangedAfterSave)),
+        "2e0001",
     );
 }
 
@@ -673,13 +707,14 @@ fn device_inventory() {
                 virtual_thumbwheel: true,
                 pointer_scaling: true,
                 force_sensing: true,
+                disable_keys: false,
             }),
             settings_revision: 7,
         }],
     }];
     assert_wire(
         &inventory,
-        "010d426f6c74205265636569766572fb6d04fb48c501084630304443414645010101094d58204d535452335301fb34b00001010150020001030106323134304c5a0102030400010100fb34b0fb8240000b01010100000101010101000101010101010107",
+        "010d426f6c74205265636569766572fb6d04fb48c501084630304443414645010101094d58204d535452335301fb34b00001010150020001030106323134304c5a0102030400010100fb34b0fb8240000b0101010000010101010100010101010101010007",
     );
 }
 
@@ -720,6 +755,39 @@ fn pairing_updates() {
 
 #[test]
 fn device_settings_payloads() {
+    let disable_keys = DisableKeysState {
+        supported: DisableKeysMask::from_bits_retain(0xa1),
+        disabled: DisableKeysMask::from_bits_retain(0xe0),
+    };
+    assert_wire(&DisableKeysMask::from_bits_retain(0xa1), "a1");
+    assert_wire(&disable_keys, "a1e0");
+    assert_wire(&Ok::<DisableKeysState, WriteError>(disable_keys), "00a1e0");
+    assert_wire(&HidppOperation::ReadDisableKeys, "1a");
+    assert_wire(&HidppOperation::WriteDisableKeys, "1b");
+    assert_wire(
+        &WriteError::UnsupportedMask {
+            operation: HidppOperation::WriteDisableKeys,
+            feature_hex: 0x4521,
+            requested: 0x20,
+            supported: 0x1f,
+        },
+        "1c1bfb2145201f",
+    );
+    assert_wire(
+        &WriteError::WriteNotApplied {
+            operation: HidppOperation::WriteDisableKeys,
+            feature_hex: 0x4521,
+            expected: 0xa1,
+            actual: 0x01,
+        },
+        "1d1bfb2145a101",
+    );
+    assert_wire(
+        &WriteError::WriteSuperseded {
+            operation: HidppOperation::WriteDisableKeys,
+        },
+        "1e1b",
+    );
     let dpi: Result<DpiInfo, WriteError> = Ok(DpiInfo {
         current: Dpi::new(1600),
         capabilities: DpiCapabilities::new(vec![800, 1600, 3200]).expect("non-empty list"),
@@ -1115,5 +1183,26 @@ fn force_sensing_dtos_and_errors() {
             actual: 5089,
         },
         "1bfb9411fbe113",
+    );
+}
+
+#[test]
+fn disable_keys_requests_are_appended() {
+    let route = DeviceRoute::Bolt {
+        receiver_uid: "F00DCAFE".into(),
+        slot: 1,
+    };
+    assert_wire(
+        &AgentRequest::ReadDisableKeys {
+            route: route.clone(),
+        },
+        "2c0008463030444341464501",
+    );
+    assert_wire(
+        &AgentRequest::SetDisableKeys {
+            route,
+            desired: DisableKeysMask::CAPS_LOCK,
+        },
+        "2d000846303044434146450101",
     );
 }

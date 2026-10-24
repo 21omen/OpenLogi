@@ -10,13 +10,18 @@
 
 use std::sync::Arc;
 
-use hidpp::{channel::HidppChannel, device::Device, feature::CreatableFeature};
+use hidpp::{
+    channel::HidppChannel,
+    device::Device,
+    feature::{CreatableFeature, disable_keys::DisableKeysFeature},
+};
 
 use crate::backend::HidBackend;
 use crate::channel::route::{DeviceRoute, open_route_channel};
 
 mod backlight;
 mod diagnostics;
+mod disable_keys;
 mod dpi;
 mod dpi_led;
 mod easy_switch;
@@ -36,6 +41,10 @@ pub use backlight::{get_backlight, get_backlight_on, update_backlight, update_ba
 pub use diagnostics::{
     FeatureEntry, FirmwareEntity, FirmwareEntityInfo, ReprogControlEntry, dump_features,
     dump_firmware_entities, dump_reprog_controls, read_battery_raw,
+};
+pub use disable_keys::{
+    get_disable_keys, get_disable_keys_on, set_disable_keys, set_disable_keys_on,
+    set_disable_keys_write_through_on,
 };
 pub use dpi::{
     Dpi, DpiCapabilities, DpiInfo, DpiTarget, get_dpi, get_dpi_info, get_dpi_info_on, set_dpi,
@@ -72,6 +81,7 @@ pub use litra::{
     encode_command as encode_litra_command, find_litra, litra_model_for_route, matches_litra,
     read_state as read_litra_state, watch as watch_litra,
 };
+pub use openlogi_core::hid::{DisableKeysMask, DisableKeysState};
 pub use openlogi_core::hid::{
     EasySwitchHosts, EasySwitchSlot, HostConnection, HostOsInfo, HostOsKind,
 };
@@ -122,9 +132,31 @@ pub(crate) async fn open_feature_with_version<F: CreatableFeature + 'static>(
         .root()
         .get_feature(F::ID)
         .await
-        .map_err(|e| classify_hidpp_error(e, HidppOperation::ResolveFeature, F::ID))?
-        .ok_or(WriteError::FeatureUnsupported { feature_hex: F::ID })?;
+        .map_err(|e| classify_hidpp_error(e, HidppOperation::ResolveFeature, F::ID))?;
+    register_feature::<F>(device, info)
+}
+
+/// Eligibility and wrapper registration have one owner for both I/O lifetimes.
+fn register_feature<F: CreatableFeature + 'static>(
+    device: &mut Device,
+    info: Option<hidpp::feature::root::FeatureInformation>,
+) -> Result<(Arc<F>, u8), WriteError> {
+    let info = info.ok_or(WriteError::FeatureUnsupported { feature_hex: F::ID })?;
+    if F::ID == DisableKeysFeature::ID && !info.typ.is_end_user_configurable() {
+        return Err(WriteError::FeatureUnsupported { feature_hex: F::ID });
+    }
     Ok((device.add_feature::<F>(info.index), info.version))
+}
+
+async fn open_feature_write_through<F: CreatableFeature + 'static>(
+    device: &mut Device,
+) -> Result<Arc<F>, WriteError> {
+    let info = device
+        .root()
+        .get_feature_write_through(F::ID)
+        .await
+        .map_err(|error| classify_hidpp_error(error, HidppOperation::ResolveFeature, F::ID))?;
+    register_feature::<F>(device, info).map(|(feature, _)| feature)
 }
 
 /// Boilerplate-eater: open the channel that reaches `route`, then run `f` once
