@@ -34,7 +34,8 @@ pub use backend::{
     BackendError, HidBackend, HotplugEvent, HotplugStream, NodeId, NodeInfo, RawWriter,
 };
 pub use backlight::{
-    BacklightChange, BacklightControls, BacklightMode, BacklightState, BacklightStatus,
+    BacklightChange, BacklightControls, BacklightDuration, BacklightMode, BacklightState,
+    BacklightStatus,
 };
 pub use channel::route::{
     DIRECT_DEVICE_INDEX, DeviceRoute, LOGITECH_VENDOR_ID, RECEIVERS, ReceiverBrand,

@@ -23,6 +23,7 @@ use openlogi_core::hid::{Dpi, SmartShiftStatus};
 use tokio::sync::mpsc;
 use tracing::warn;
 
+pub use backlight::DurationSteps;
 pub use config::ConfigPersistence;
 pub(crate) use device_key::DeviceKey;
 pub(crate) use device_session::ObservedConnection;
@@ -194,6 +195,10 @@ pub struct AppState {
     next_disable_keys_request_id: u64,
     /// Standalone-light sequencing and aggregate camera activity.
     lights: LightSession,
+    /// Which timer steps the backlight card is showing. A disclosure, not a
+    /// keyboard setting: the keyboard keeps whatever duration was last
+    /// written, and switching this writes nothing.
+    duration_steps: DurationSteps,
     /// Sender to the IPC client thread. The agent owns the hook and device I/O.
     ipc_commands: mpsc::UnboundedSender<crate::services::ipc::Command>,
     /// Camera-consent poll started by an in-app macOS prompt. The app-state
@@ -300,6 +305,7 @@ impl AppState {
             action_ring_editing_apps: BTreeMap::new(),
             pointer: PointerState::default(),
             lights: LightSession::default(),
+            duration_steps: DurationSteps::Short,
             disable_keys_reads: DisableKeysReads::default(),
             next_disable_keys_request_id: 0,
             ipc_commands,

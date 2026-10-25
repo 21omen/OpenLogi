@@ -41,12 +41,13 @@ use openlogi_core::device::{
     LightValueUnit, LockKey, PairedDevice, RawDeviceAddress, ReceiverInfo, StandaloneDevice,
 };
 use openlogi_core::hid::{
-    BacklightChange, BacklightControls, BacklightMode, BacklightState, BacklightStatus, Click,
-    DeviceRoute, DisableKeysMask, DisableKeysState, Dpi, DpiCapabilities, DpiInfo, EasySwitchHosts,
-    EasySwitchSlot, FnLockState, ForceSensingInfo, HidppFeatureErrorKind, HidppOperation,
-    HostConnection, HostOsInfo, HostOsKind, LightCommand, PasskeyMethod, ReceiverSelector,
-    ReportRate, ReportRateInfo, ScrollReportingTarget, ScrollWheelMode, SmartShiftAutoDisengage,
-    SmartShiftMode, SmartShiftStatus, SmartShiftThreshold, TunableTorque, WriteError,
+    BacklightChange, BacklightControls, BacklightDuration, BacklightMode, BacklightState,
+    BacklightStatus, Click, DeviceRoute, DisableKeysMask, DisableKeysState, Dpi, DpiCapabilities,
+    DpiInfo, EasySwitchHosts, EasySwitchSlot, FnLockState, ForceSensingInfo, HidppFeatureErrorKind,
+    HidppOperation, HostConnection, HostOsInfo, HostOsKind, LightCommand, PasskeyMethod,
+    ReceiverSelector, ReportRate, ReportRateInfo, ScrollReportingTarget, ScrollWheelMode,
+    SmartShiftAutoDisengage, SmartShiftMode, SmartShiftStatus, SmartShiftThreshold, TunableTorque,
+    WriteError,
 };
 use openlogi_ipc::{
     ActionRingCommandError, ActionRingInvocation, ActionRingPresentation, AgentRequest,
@@ -887,14 +888,15 @@ fn semantic_read_payloads() {
         current_level: 4,
         nb_levels: 8,
         power_save: true,
-        controls: BacklightControls {
-            automatic: true,
-            level: true,
-            power_save: false,
-        },
+        duration: BacklightDuration::try_from(30).ok(),
+        controls: BacklightControls::AUTOMATIC
+            | BacklightControls::LEVEL
+            | BacklightControls::DURATION,
     });
-    // v36 appends `power_save` and `controls` after the level count.
-    assert_wire(&backlight, "00010102040801010100");
+    // v36 appends `power_save` and `controls`; the timer's `duration` and
+    // `duration` ride v41 as the controls bit set (30 seconds) — the
+    // validated timer now serializes as an `Option` tag plus its seconds.
+    assert_wire(&backlight, "000101020408010b011e");
 
     let fn_lock: Result<FnLockState, WriteError> = Ok(FnLockState {
         fn_lock: true,
@@ -1086,6 +1088,12 @@ fn backlight_changes_and_errors() {
     assert_wire(&BacklightChange::Automatic(false), "0100");
     assert_wire(&BacklightChange::Level(3), "0203");
     assert_wire(&BacklightChange::PowerSave(true), "0301");
+    // Variant 4, then the seconds as a varint. 15 fits one byte; the
+    // validated timer serializes transparently as its seconds.
+    assert_wire(
+        &BacklightChange::Duration(BacklightDuration::try_from(15).expect("15 is a listed step")),
+        "040f",
+    );
     assert_wire(
         &WriteError::BacklightChangeUnsupported {
             change: BacklightChange::Level(8),

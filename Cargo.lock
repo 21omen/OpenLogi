@@ -5683,6 +5683,7 @@ version = "0.8.17"
 dependencies = [
  "atomic-write-file",
  "az",
+ "bitflags 2.13.1",
  "etcetera",
  "fluent-langneg",
  "num_enum",
