@@ -2,7 +2,7 @@
 //! section bodies (Buttons, Keys, Pointer, Lighting, Camera, Device).
 
 use gpui::{
-    Context, InteractiveElement, IntoElement, ParentElement, Rems, Role,
+    Context, InteractiveElement, IntoElement, ParentElement, Rems, Role, SharedString,
     StatefulInteractiveElement as _, Styled, div, prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::Button as BaseButton;
@@ -145,22 +145,10 @@ pub(super) fn detail_content(
         .min_h_0()
         .w_full()
         .when(!online, |this| {
-            this.child(
-                h_flex()
-                    .flex_shrink_0()
-                    .w_full()
-                    .items_center()
-                    .gap_2()
-                    .border_b_1()
-                    .border_color(pal.border)
-                    .bg(pal.panel)
-                    .px_5()
-                    .py_2()
-                    .text_caption()
-                    .text_color(pal.text_muted)
-                    .child(Icon::new(IconName::Info).size_4())
-                    .child(tr!("device.device_offline_changes_pending")),
-            )
+            this.child(info_banner(
+                pal,
+                tr!("device.device_offline_changes_pending"),
+            ))
         })
         .child(
             h_flex()
@@ -172,6 +160,24 @@ pub(super) fn detail_content(
                 .child(navigation)
                 .child(content),
         )
+}
+
+/// A full-width notice above a device page's content.
+fn info_banner(pal: Palette, text: impl Into<SharedString>) -> gpui::Div {
+    h_flex()
+        .flex_shrink_0()
+        .w_full()
+        .items_center()
+        .gap_2()
+        .border_b_1()
+        .border_color(pal.border)
+        .bg(pal.panel)
+        .px_5()
+        .py_2()
+        .text_caption()
+        .text_color(pal.text_muted)
+        .child(Icon::new(IconName::Info).size_4())
+        .child(text.into())
 }
 
 /// Stable workspace navigation. Keeping the section names visible makes the
@@ -263,11 +269,20 @@ fn buttons_tab(
     app_catalog: &gpui::Entity<AppCatalogPicker>,
     cx: &mut Context<AppView>,
 ) -> impl IntoElement {
+    // Host mode stops the mouse's own DPI and profile buttons, which the
+    // user would otherwise take for a fault.
+    let host_mode = AppState::try_read(cx).is_some_and(AppState::host_mode_claimed);
     v_flex()
         .flex_1()
         .w_full()
         .min_h_0()
         .children(button_profile_scope_bar(profile_icons, app_catalog, cx))
+        .when(host_mode, |this| {
+            this.child(info_banner(
+                theme::palette(cx),
+                tr!("device.onboard_profiles_paused"),
+            ))
+        })
         .child(mouse_model.clone())
 }
 

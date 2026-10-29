@@ -455,10 +455,38 @@ fn active_thumbwheel_directions_highlight_the_paired_control() {
     );
 }
 
+/// On the fallback silhouette a spy model's extras take the place of the
+/// controls only `0x1b04` captures, each with a hotspot and a label.
+#[test]
+fn a_spy_model_places_and_labels_its_extras_on_the_fallback_model() {
+    let g502 = SpyModel::for_model_key("04099").expect("the G502 X Plus has a spy row");
+    let (_, _, hotspots, labels) = scaled_model(
+        None,
+        560.,
+        420.,
+        false,
+        LabelDistribution::LeftOnly,
+        Some(g502),
+    );
+    for &button in g502.extra_buttons() {
+        let id = MouseControlId::Button(button);
+        assert!(
+            hotspots.iter().any(|hotspot| hotspot.id == id),
+            "{button:?}"
+        );
+        assert!(labels.iter().any(|label| label.id == id), "{button:?}");
+    }
+    assert!(!hotspots.iter().any(|hotspot| matches!(
+        hotspot.id,
+        MouseControlId::Button(ButtonId::GestureButton | ButtonId::DpiToggle)
+    )));
+}
+
 #[test]
 fn fallback_model_only_adds_thumbwheel_when_capability_is_measured() {
-    let (_, _, without, _) = scaled_model(None, 560., 420., false, LabelDistribution::LeftOnly);
-    let (_, _, with, _) = scaled_model(None, 560., 420., true, LabelDistribution::LeftOnly);
+    let (_, _, without, _) =
+        scaled_model(None, 560., 420., false, LabelDistribution::LeftOnly, None);
+    let (_, _, with, _) = scaled_model(None, 560., 420., true, LabelDistribution::LeftOnly, None);
     assert_eq!(
         without
             .iter()

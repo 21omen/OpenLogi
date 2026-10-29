@@ -3,9 +3,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use openlogi_core::binding::{
-    Action, Binding, ButtonId, GestureDirection, LongPressBinding, WheelHoldBinding,
+    Action, Binding, ButtonId, GestureDirection, LongPressBinding, SpyModel, WheelHoldBinding,
 };
-use openlogi_core::bindings::{bindings_for, hidpp_gesture_maps_for, oshook_gestures_for};
+use openlogi_core::bindings::{
+    bindings_for, button_bindings_for, hidpp_gesture_maps_for, oshook_gestures_for,
+};
 use openlogi_core::config::{Config, KeyTrigger};
 use tracing::debug;
 
@@ -165,6 +167,30 @@ impl AppState {
     #[must_use]
     pub fn active_button(&self) -> Option<ButtonId> {
         self.bindings.active_button
+    }
+
+    /// The Host-mode model of the selected mouse, by the HID++ model it
+    /// reports (or last reported, while asleep).
+    #[must_use]
+    pub fn spy_model(&self) -> Option<&'static SpyModel> {
+        SpyModel::for_model_key(&self.current_record()?.model_key)
+    }
+
+    /// Whether the open profile of the selected mouse puts it in Host mode,
+    /// which pauses its onboard profiles.
+    ///
+    /// Reads the full binding shapes, not the click projection: a click-less
+    /// long press claims Host mode too.
+    #[must_use]
+    pub fn host_mode_claimed(&self) -> bool {
+        let Some(model) = self.spy_model() else {
+            return false;
+        };
+        let key = self
+            .current_record()
+            .and_then(DeviceRecord::persistent_config_key);
+        let bindings = button_bindings_for(&self.config, key, self.editing_app());
+        !model.armed_buttons(&bindings).is_empty()
     }
 
     /// Effective mouse bindings for the selected device and open profile.

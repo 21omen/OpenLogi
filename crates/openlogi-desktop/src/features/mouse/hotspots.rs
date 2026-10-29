@@ -3,7 +3,7 @@
 //! stored as plain `f32` tuples so this module stays purely data and doesn't
 //! drag in `gpui` types.
 
-use openlogi_core::binding::ButtonId;
+use openlogi_core::binding::{ButtonId, SpyModel};
 
 /// One visual target in the mouse diagram.
 ///
@@ -122,6 +122,57 @@ pub fn default_hotspots(thumbwheel: bool) -> Vec<Hotspot> {
     hotspots
 }
 
+/// Silhouette controls that only `0x1b04` can capture. A [`SpyModel`] has no
+/// `0x1b04`, so they come off its silhouette; its extras take their place.
+const REPROG_ONLY: [ButtonId; 3] = [
+    ButtonId::GestureButton,
+    ButtonId::DpiToggle,
+    ButtonId::HapticPanel,
+];
+
+/// Where an extra button sits on the synthetic silhouette, or `None` for a
+/// button the silhouette has no place for.
+///
+/// Placeholders until the device image places them: the G502 X Plus's G6
+/// takes the left-thumb slot, G7/G8 flank the DPI pad and G9 sits behind
+/// them.
+fn silhouette_slot(button: ButtonId) -> Option<(f32, f32, f32, f32)> {
+    match button {
+        ButtonId::DpiShift => Some((8., 380., 44., 80.)),
+        ButtonId::DpiDown => Some((130., 226., 48., 44.)),
+        ButtonId::DpiUp => Some((242., 226., 48., 44.)),
+        ButtonId::ProfileCycle => Some((175., 278., 70., 40.)),
+        _ => None,
+    }
+}
+
+/// Swap `hotspots`' `0x1b04`-only controls for `model`'s extra buttons,
+/// placed on the silhouette scaled by `scale`. An extra the image already
+/// places keeps that place.
+pub fn merge_spy_hotspots(hotspots: &mut Vec<Hotspot>, model: &SpyModel, scale: (f32, f32)) {
+    hotspots.retain(|hotspot| {
+        hotspot
+            .id
+            .button()
+            .is_none_or(|button| !REPROG_ONLY.contains(&button))
+    });
+    for &button in model.extra_buttons() {
+        if hotspots.iter().any(|existing| existing.id == button.into()) {
+            continue;
+        }
+        let Some((x, y, w, h)) = silhouette_slot(button) else {
+            continue;
+        };
+        hotspots.push(Hotspot {
+            id: button.into(),
+            x: x * scale.0,
+            y: y * scale.1,
+            w: w * scale.0,
+            h: h * scale.1,
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -177,5 +228,62 @@ mod tests {
             }),
             "primary clicks are not remappable and must stay out of the model"
         );
+    }
+
+    fn g502() -> &'static SpyModel {
+        SpyModel::for_model_key("04099").expect("the G502 X Plus has a spy row")
+    }
+
+    #[test]
+    fn a_spy_model_swaps_reprog_only_controls_for_its_extras() {
+        let mut hotspots = default_hotspots(false);
+        merge_spy_hotspots(&mut hotspots, g502(), (1., 1.));
+        for &button in g502().extra_buttons() {
+            assert_eq!(
+                hotspots
+                    .iter()
+                    .filter(|h| h.id == MouseControlId::Button(button))
+                    .count(),
+                1,
+                "{button:?} needs one hotspot"
+            );
+        }
+        assert!(
+            !hotspots
+                .iter()
+                .any(|h| h.id.button().is_some_and(|b| REPROG_ONLY.contains(&b))),
+            "a mouse without 0x1b04 cannot capture the MX-only controls"
+        );
+        assert!(
+            hotspots
+                .iter()
+                .any(|h| h.id == MouseControlId::Button(ButtonId::Back)),
+            "the side buttons stay"
+        );
+    }
+
+    #[test]
+    fn an_extra_the_image_places_keeps_its_place() {
+        let placed = Hotspot {
+            id: ButtonId::DpiUp.into(),
+            x: 1.,
+            y: 2.,
+            w: 3.,
+            h: 4.,
+        };
+        let mut hotspots = vec![placed];
+        merge_spy_hotspots(&mut hotspots, g502(), (2., 2.));
+        assert_eq!(
+            hotspots
+                .iter()
+                .filter(|h| h.id == MouseControlId::Button(ButtonId::DpiUp))
+                .collect::<Vec<_>>(),
+            [&placed]
+        );
+        let shift = hotspots
+            .iter()
+            .find(|h| h.id == MouseControlId::Button(ButtonId::DpiShift))
+            .expect("G6 placed on the silhouette");
+        assert_eq!((shift.x, shift.y, shift.w, shift.h), (16., 760., 88., 160.));
     }
 }
