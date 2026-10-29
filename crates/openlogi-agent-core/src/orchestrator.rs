@@ -15,7 +15,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
 
 use openlogi_core::app::ForegroundApp;
-use openlogi_core::binding::{Binding, ButtonId};
+use openlogi_core::binding::{Binding, ButtonId, SpyModel};
 use openlogi_core::bindings::{button_bindings_for, oshook_gestures_for};
 use openlogi_core::config::{
     AppSettings, Config, ConfigRevision, LightSettings, MouseProfileTarget, canonical_device_key,
@@ -1042,6 +1042,9 @@ impl Orchestrator {
             plan.dispatch.invert_wheel = wheel_inverted(&self.config, dev);
             plan.target.spec.divert_main_wheel =
                 main_wheel_divert(&self.config, dev, self.os_mouse_hook_available);
+            if let Some(model) = SpyModel::for_model_key(&dev.model_key) {
+                plan.claim_spy(model);
+            }
             if let Some(keyboard) = keyboard
                 .as_ref()
                 .filter(|keyboard| keyboard.route == plan.target.route)

@@ -11,14 +11,16 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use openlogi_core::binding::{Action, Binding, ButtonId, GestureDirection, default_binding};
+use openlogi_core::binding::{
+    Action, Binding, ButtonId, GestureDirection, SpyModel, default_binding,
+};
 use openlogi_core::bindings::{button_bindings_for, hidpp_gesture_maps_for, oshook_gestures_for};
 use openlogi_core::config::{Config, ThumbwheelSensitivity};
 use openlogi_core::device_order::PhysicalDeviceKey;
 use openlogi_hid::DeviceRoute;
 use openlogi_hid::reprog_controls::DPI_MODE_SHIFT_CIDS;
 use openlogi_hid::session::gesture::{
-    CaptureSpec, DIVERTABLE_STANDARD_BUTTONS, GESTURE_SOURCE_BUTTONS,
+    CaptureSpec, DIVERTABLE_STANDARD_BUTTONS, GESTURE_SOURCE_BUTTONS, SpyCapture,
 };
 use tokio::sync::watch;
 
@@ -118,6 +120,25 @@ impl DeviceCapturePlan {
                 "controls left to the keyboard session"
             );
         }
+    }
+
+    /// Take the buttons of `model`, the mouse this plan targets, over in Host
+    /// mode where its bindings need it (see [`SpyModel::armed_buttons`]). The
+    /// spy then owns them, so they leave every `0x1b04` divert set; the
+    /// dispatch map keeps resolving them.
+    pub(crate) fn claim_spy(&mut self, model: &'static SpyModel) {
+        let buttons = model.armed_buttons(&self.dispatch.bindings);
+        if buttons.is_empty() {
+            return;
+        }
+        let spec = &mut self.target.spec;
+        spec.divert_buttons
+            .retain(|(_, button)| !buttons.contains(button));
+        spec.divert_gesture_buttons
+            .retain(|(_, button)| !buttons.contains(button));
+        spec.divert_wheel_buttons
+            .retain(|(_, button)| !buttons.contains(button));
+        spec.spy = Some(SpyCapture { model, buttons });
     }
 }
 
@@ -323,6 +344,8 @@ pub fn plan_for_device(
                 // Needs the device's wheel capabilities and the settings of
                 // its current link, so the orchestrator fills it in.
                 divert_main_wheel: None,
+                // Needs the HID++ model the device reports, so the
+                // orchestrator claims it (see `DeviceCapturePlan::claim_spy`).
                 spy: None,
             },
             rearm_generation,
@@ -1065,5 +1088,89 @@ mod tests {
         } else {
             assert!(plan.dispatch.side_gesture_bindings.is_empty());
         }
+    }
+
+    fn g502() -> &'static SpyModel {
+        SpyModel::for_model_key("04099").expect("the G502 X Plus has a spy row")
+    }
+
+    /// The G502's plan under `cfg`, with its Host-mode buttons claimed.
+    fn g502_plan(cfg: &Config) -> DeviceCapturePlan {
+        let mut plan = plan_for_device(cfg, "unit:00000001", route(), None, 0, true);
+        plan.claim_spy(g502());
+        plan
+    }
+
+    const G502_EXTRAS: [ButtonId; 4] = [
+        ButtonId::DpiShift,
+        ButtonId::ProfileCycle,
+        ButtonId::DpiUp,
+        ButtonId::DpiDown,
+    ];
+
+    #[test]
+    fn an_unbound_g502_stays_on_its_onboard_profiles() {
+        assert_eq!(g502_plan(&Config::default()).target.spec.spy, None);
+    }
+
+    #[test]
+    fn one_bound_extra_claims_the_whole_cluster() {
+        let mut cfg = Config::default();
+        cfg.set_binding(
+            "unit:00000001",
+            ButtonId::DpiUp,
+            Binding::Single(Action::MissionControl),
+        );
+        let spy = g502_plan(&cfg).target.spec.spy.expect("Host mode claimed");
+        assert_eq!(spy.model, g502());
+        assert_eq!(spy.buttons, G502_EXTRAS);
+    }
+
+    #[test]
+    fn a_click_less_long_press_on_g6_claims_the_cluster() {
+        let mut cfg = Config::default();
+        cfg.set_binding(
+            "unit:00000001",
+            ButtonId::DpiShift,
+            Binding::LongPress(LongPressBinding::new(Action::None, Action::MissionControl)),
+        );
+        let spy = g502_plan(&cfg).target.spec.spy.expect("Host mode claimed");
+        assert_eq!(spy.buttons, G502_EXTRAS);
+    }
+
+    /// The spy owns a remapped side button, so no `0x1b04` divert of the same
+    /// button is requested alongside it.
+    #[test]
+    fn a_remapped_side_button_moves_from_the_divert_set_to_the_spy() {
+        let mut cfg = Config::default();
+        cfg.set_binding(
+            "unit:00000001",
+            ButtonId::Back,
+            Binding::Single(Action::PreviousDesktop),
+        );
+        let unclaimed = plan_for_device(&cfg, "unit:00000001", route(), None, 0, true);
+        assert!(
+            unclaimed
+                .target
+                .spec
+                .divert_buttons
+                .iter()
+                .any(|&(_, button)| button == ButtonId::Back),
+            "without a spy model Back asks for a 0x1b04 divert"
+        );
+        let plan = g502_plan(&cfg);
+        let spy = plan.target.spec.spy.expect("Host mode claimed");
+        assert_eq!(spy.buttons, [ButtonId::Back]);
+        assert!(
+            plan.target
+                .spec
+                .divert_buttons
+                .iter()
+                .all(|&(_, button)| button != ButtonId::Back)
+        );
+        assert!(
+            plan.dispatch.bindings.contains_key(&ButtonId::Back),
+            "dispatch still resolves the button the spy reports"
+        );
     }
 }
