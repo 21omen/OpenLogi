@@ -67,6 +67,19 @@ pub enum ButtonId {
     /// Logi metadata slot `SLOT_NAME_RIGHT_SCROLL_BUTTON`. Counterpart to
     /// [`ButtonId::WheelTiltLeft`].
     WheelTiltRight,
+    /// The G502 X Plus's sniper button (G6), which lowers the DPI while held.
+    /// A [`SpyModel`](super::SpyModel) extra: captured from the `0x8110`
+    /// button spy in Host mode, never by the OS hook, and kept out of
+    /// [`ButtonId::ALL`].
+    DpiShift,
+    /// DPI up (G8 on the G502 X Plus). A [`SpyModel`](super::SpyModel) extra.
+    DpiUp,
+    /// DPI down (G7 on the G502 X Plus). A [`SpyModel`](super::SpyModel)
+    /// extra.
+    DpiDown,
+    /// Onboard-profile cycle (G9 on the G502 X Plus). A
+    /// [`SpyModel`](super::SpyModel) extra.
+    ProfileCycle,
     /// A keyboard key, by the HID++ `0x1b04` control it reports as. Diverted
     /// over HID++ while bound (the OS hook never sees these keys); left on its
     /// native firmware function otherwise.
@@ -175,7 +188,7 @@ impl ButtonId {
     /// string form read this one table; `unit_name` is a match without a
     /// wildcard over the unit variants, so a new variant that is missing here
     /// fails to compile rather than failing to parse.
-    const UNIT_NAMES: [(ButtonId, &'static str); 13] = [
+    const UNIT_NAMES: [(ButtonId, &'static str); 17] = [
         (ButtonId::LeftClick, "LeftClick"),
         (ButtonId::RightClick, "RightClick"),
         (ButtonId::MiddleClick, "MiddleClick"),
@@ -189,6 +202,10 @@ impl ButtonId {
         (ButtonId::HapticPanel, "HapticPanel"),
         (ButtonId::WheelTiltLeft, "WheelTiltLeft"),
         (ButtonId::WheelTiltRight, "WheelTiltRight"),
+        (ButtonId::DpiShift, "DpiShift"),
+        (ButtonId::DpiUp, "DpiUp"),
+        (ButtonId::DpiDown, "DpiDown"),
+        (ButtonId::ProfileCycle, "ProfileCycle"),
     ];
 
     /// The name a mouse button is persisted under. Keyboard controls have no
@@ -208,6 +225,10 @@ impl ButtonId {
             ButtonId::HapticPanel => Self::UNIT_NAMES[10].1,
             ButtonId::WheelTiltLeft => Self::UNIT_NAMES[11].1,
             ButtonId::WheelTiltRight => Self::UNIT_NAMES[12].1,
+            ButtonId::DpiShift => Self::UNIT_NAMES[13].1,
+            ButtonId::DpiUp => Self::UNIT_NAMES[14].1,
+            ButtonId::DpiDown => Self::UNIT_NAMES[15].1,
+            ButtonId::ProfileCycle => Self::UNIT_NAMES[16].1,
             ButtonId::Control(_) => return None,
         })
     }
@@ -238,6 +259,10 @@ impl ButtonId {
             ButtonId::ThumbwheelScrollDown => "Thumb Wheel Down",
             ButtonId::GestureButton => "Gesture Button",
             ButtonId::HapticPanel => "Haptic Panel",
+            ButtonId::DpiShift => "DPI Shift",
+            ButtonId::DpiUp => "DPI Up",
+            ButtonId::DpiDown => "DPI Down",
+            ButtonId::ProfileCycle => "Profile Cycle",
             ButtonId::Control(cid) => return cid.label(),
         })
     }
@@ -259,6 +284,10 @@ impl ButtonId {
             ButtonId::ThumbwheelScrollDown => "pointer.thumb_wheel_down",
             ButtonId::GestureButton => "actions.gesture_button",
             ButtonId::HapticPanel => "actions.haptic_panel",
+            ButtonId::DpiShift => "actions.dpi_shift",
+            ButtonId::DpiUp => "actions.dpi_up",
+            ButtonId::DpiDown => "actions.dpi_down",
+            ButtonId::ProfileCycle => "actions.profile_cycle",
             ButtonId::Control(cid) => cid.translation_key(),
         }
     }

@@ -153,7 +153,9 @@ pub use succession::Identity;
 ///      `BacklightChange::Duration` appended — the `0x1982` backlight
 ///      timer, five-second steps up to two hours.
 /// v42: `KeyboardUsage` accepts Insert (`0x49`) and Print Screen (`0x46`),
-///      so a `KeyCombo` can carry a usage a v41 agent rejects.
+///      so a `KeyCombo` can carry a usage a v41 agent rejects. `ButtonId`
+///      gains the Host-mode spy extras `DpiShift`, `DpiUp`, `DpiDown` and
+///      `ProfileCycle`, names a v41 peer cannot parse.
 pub const PROTOCOL_VERSION: u32 = 42;
 
 /// Environment variable through which the agent hands a supervised helper the

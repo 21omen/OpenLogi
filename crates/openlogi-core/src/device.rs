@@ -127,7 +127,8 @@ impl DeviceKind {
     reason = "capabilities is a serialized feature-bit DTO; independent booleans keep the IPC/config shape explicit"
 )]
 pub struct Capabilities {
-    /// Reprogrammable buttons — HID++ `0x1b00`–`0x1b04` (ReprogControls).
+    /// Reprogrammable buttons — HID++ `0x1b00`–`0x1b04` (ReprogControls) or
+    /// `0x8110` (MouseButtonFilter, remapped in Host mode).
     pub buttons: bool,
     /// Adjustable pointer resolution — HID++ `0x2201` / `0x2202` (AdjustableDpi).
     pub pointer: bool,
@@ -215,7 +216,7 @@ impl Capabilities {
     /// Membership of a driving feature ID flips the corresponding flag.
     #[must_use]
     pub fn from_feature_ids(ids: &[u16]) -> Self {
-        const BUTTONS: [u16; 5] = [0x1b00, 0x1b01, 0x1b02, 0x1b03, 0x1b04];
+        const BUTTONS: [u16; 6] = [0x1b00, 0x1b01, 0x1b02, 0x1b03, 0x1b04, 0x8110];
         const POINTER: [u16; 2] = [0x2201, 0x2202];
         // Every family here is driven by `set_keyboard_color`, which tries
         // effect engines before per-zone paths. The 0x198x backlight is not
