@@ -753,6 +753,12 @@ fn two_mouse_hidpp_plans_are_device_scoped_while_hook_fallback_is_selected_devic
 /// MX with the same binding claims nothing.
 #[test]
 fn published_plans_claim_host_mode_buttons_by_the_reported_model() {
+    for g502_model in ["04099", "14099"] {
+        claims_host_mode_for(g502_model);
+    }
+}
+
+fn claims_host_mode_for(g502_model: &str) {
     let mut config = Config::default();
     for key in ["a", "b"] {
         config.set_binding(
@@ -762,7 +768,7 @@ fn published_plans_claim_host_mode_buttons_by_the_reported_model() {
         );
     }
     let mut g502 = dev("a", 1, true);
-    g502.model_key = "04099".to_owned();
+    g502.model_key = g502_model.to_owned();
     let mut mx = dev("b", 2, true);
     mx.model_key = "2b042".to_owned();
     let mut orch = orchestrator(config);
@@ -783,7 +789,7 @@ fn published_plans_claim_host_mode_buttons_by_the_reported_model() {
             .clone()
     };
     let claimed = spy_of(1).expect("the G502 enters Host mode");
-    assert_eq!(claimed.model.model_key(), "04099");
+    assert_eq!(claimed.model.model_key(), g502_model);
     assert!(claimed.buttons.contains(&ButtonId::DpiUp));
     assert_eq!(spy_of(2), None);
 }

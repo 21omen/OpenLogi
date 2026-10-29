@@ -87,7 +87,8 @@ const G502_X_PLUS_EXTRAS: [ButtonId; 4] = [
     ButtonId::ProfileCycle,
 ];
 
-/// The G502 X Plus's spy bits, from a live `diag mouse-buttons --watch`.
+/// The spy bits of the G502 X Plus reporting extended model id 0, from the
+/// live `diag mouse-buttons --watch` of the original Host-mode work.
 const G502_X_PLUS_BITS: [SpyBit; 6] = [
     SpyBit::new(3, ButtonId::Back),
     SpyBit::new(4, ButtonId::DpiShift),
@@ -97,16 +98,39 @@ const G502_X_PLUS_BITS: [SpyBit; 6] = [
     SpyBit::new(10, ButtonId::DpiDown),
 ];
 
+/// The spy bits of the G502 X Plus reporting extended model id 1 (wpid 4099
+/// on a LIGHTSPEED receiver `046d:c547`, model ids `4099 c095 0000`), from
+/// its own live `diag mouse-buttons --watch` (11 slots, mapping `01..0b`).
+/// They match the extended-id-0 dump, which this row does not rely on.
+const G502_X_PLUS_EXT1_BITS: [SpyBit; 6] = [
+    SpyBit::new(3, ButtonId::Back),
+    SpyBit::new(4, ButtonId::DpiShift),
+    SpyBit::new(5, ButtonId::Forward),
+    SpyBit::new(8, ButtonId::ProfileCycle),
+    SpyBit::new(9, ButtonId::DpiUp),
+    SpyBit::new(10, ButtonId::DpiDown),
+];
+
 /// Every model with a recorded spy-bit table.
-const SPY_MODELS: [SpyModel; 1] = [SpyModel {
-    // G502 X Plus, wpid 4099 on a LIGHTSPEED receiver.
-    model_key: "04099",
-    extra_buttons: &G502_X_PLUS_EXTRAS,
-    // No `0x1b04`: a remapped G4/G5 must leave the HID mapping, or the OS
-    // keeps seeing hardware Back/Forward.
-    spy_owned_os_buttons: &[ButtonId::Back, ButtonId::Forward],
-    bits: &G502_X_PLUS_BITS,
-}];
+const SPY_MODELS: [SpyModel; 2] = [
+    SpyModel {
+        // G502 X Plus, wpid 4099, extended model id 0.
+        model_key: "04099",
+        extra_buttons: &G502_X_PLUS_EXTRAS,
+        // No `0x1b04`: a remapped G4/G5 must leave the HID mapping, or the OS
+        // keeps seeing hardware Back/Forward.
+        spy_owned_os_buttons: &[ButtonId::Back, ButtonId::Forward],
+        bits: &G502_X_PLUS_BITS,
+    },
+    SpyModel {
+        // G502 X Plus, wpid 4099, extended model id 1.
+        model_key: "14099",
+        extra_buttons: &G502_X_PLUS_EXTRAS,
+        // No `0x1b04` either.
+        spy_owned_os_buttons: &[ButtonId::Back, ButtonId::Forward],
+        bits: &G502_X_PLUS_EXT1_BITS,
+    },
+];
 
 impl SpyModel {
     /// The row for the HID++ model key `model_key`, if that model has one.
@@ -210,6 +234,9 @@ mod tests {
     #[test]
     fn only_recorded_models_have_a_row() {
         assert_eq!(g502().extra_buttons(), G502_X_PLUS_EXTRAS.as_slice());
+        let ext1 = SpyModel::for_model_key("14099").expect("the extended-id-1 G502 has a row");
+        assert_eq!(ext1.model_key(), "14099");
+        assert_eq!(ext1.extra_buttons(), G502_X_PLUS_EXTRAS.as_slice());
         assert_eq!(SpyModel::for_model_key("2b042"), None);
         assert_eq!(SpyModel::for_model_key("0409f"), None);
     }
@@ -285,6 +312,25 @@ mod tests {
             (ButtonId::Forward, Binding::Single(Action::MouseForward)),
         ]);
         assert_eq!(g502().armed_buttons(&bindings), [ButtonId::Back]);
+    }
+
+    /// The extended-id-1 row against its own dump: G8 is bit 9, and arming
+    /// the extras zeroes slots 4, 8, 9 and 10 of mapping `01..0b`.
+    #[test]
+    fn the_extended_id_1_row_follows_its_own_dump() {
+        let ext1 = SpyModel::for_model_key("14099").expect("row");
+        let armed = ext1.armed_buttons(&BTreeMap::from([(
+            ButtonId::DpiUp,
+            Binding::Single(Action::Copy),
+        )]));
+        assert_eq!(armed.len(), 4);
+        let down: Vec<_> = ext1.edges(0, 1 << 9, &armed).collect();
+        assert_eq!(down, [(ButtonId::DpiUp, true)]);
+        let mapping: Vec<u8> = (1..=11).collect();
+        assert_eq!(
+            ext1.suppressed_mapping(&mapping, &armed),
+            [1, 2, 3, 4, 0, 6, 7, 8, 0, 0, 0]
+        );
     }
 
     #[test]
