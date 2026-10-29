@@ -17,7 +17,7 @@ use openlogi_core::binding::{Action, ButtonId, GestureDirection, SpyModel};
 
 use super::force_sensing::{ForceSensingFacts, ForceSensingSlider, PressForce};
 use super::geometry::{
-    LabelDistribution, asset_dimensions_for_png, asset_has_button_labels, asset_hotspots_for_png,
+    LabelDistribution, ModelStrip, asset_has_button_labels, asset_hotspots, asset_strip,
     default_labels, labels_from_hotspots,
 };
 use super::hotspots::{
@@ -452,6 +452,7 @@ impl Render for MouseModelView {
             mouse_h,
             hotspots,
             labels,
+            strip,
         } = model_layout(asset, viewport_w, viewport_h, thumbwheel, spy);
         let canvas_h = mouse_h;
 
@@ -463,7 +464,7 @@ impl Render for MouseModelView {
         let hotspots_outer = hotspots.clone();
         let labels_outer = labels.clone();
         let leader_canvas = leader_canvas(hotspots, labels, highlight, mouse_left, mouse_w);
-        let breathing_art = breathing_art(asset, mouse_left, mouse_w, mouse_h, glow);
+        let breathing_art = breathing_art(asset, strip, mouse_left, mouse_w, mouse_h, glow);
         let model = ModelRect {
             left: mouse_left,
             width: mouse_w,
@@ -560,6 +561,8 @@ struct ModelLayout {
     mouse_h: f32,
     hotspots: Vec<Hotspot>,
     labels: Vec<Label>,
+    /// Where an asset's renders sit in the model; `None` for the silhouette.
+    strip: Option<ModelStrip>,
 }
 
 /// Scale the model to fit the content area in both axes. A tall mouse is bound
@@ -573,10 +576,7 @@ fn model_layout(
     spy: Option<&'static SpyModel>,
 ) -> ModelLayout {
     let target_h = (viewport_h - MODEL_VERTICAL_RESERVE).clamp(MODEL_MIN_H, MOUSE_MODEL_SIZE.1);
-    // A spy model's extras have no markers on its image; labels are the only
-    // way to tell them apart.
-    let has_labels =
-        (asset.is_none_or(asset_has_button_labels) || spy.is_some()) && viewport_w >= 960.;
+    let has_labels = asset.is_none_or(asset_has_button_labels) && viewport_w >= 960.;
     let content_w =
         (viewport_w - MODEL_HORIZONTAL_RESERVE).clamp(MODEL_MIN_CONTENT_W, MODEL_CONTENT_MAX_W);
     let label_distribution = if has_labels && content_w >= TWO_SIDED_LABEL_MIN_W {
@@ -591,7 +591,7 @@ fn model_layout(
         0.
     };
     let max_image_w = (content_w - left_gutter - right_gutter).max(MODEL_MIN_CONTENT_W / 2.);
-    let (mouse_w, mouse_h, hotspots, mut labels) = scaled_model(
+    let (mouse_w, mouse_h, hotspots, mut labels, strip) = scaled_model(
         asset,
         target_h,
         max_image_w,
@@ -610,13 +610,16 @@ fn model_layout(
         mouse_h,
         hotspots,
         labels,
+        strip,
     }
 }
 
 /// Model geometry fit inside a `max_w` × `target_h` box. With a real asset the
-/// hotspots and labels are recomputed from the scaled dimensions; the synthetic
-/// silhouette's authored coordinates are scaled by the same factor. A `spy`
-/// model's extras join either. Returns `(mouse_w, mouse_h, hotspots, labels)`.
+/// hotspots and labels come from its markers at the scaled dimensions — a
+/// button the depot does not mark gets none, as the image's metadata is the
+/// authority on where its buttons are. The synthetic silhouette's authored
+/// coordinates are scaled by the same factor, and a `spy` model's buttons
+/// join it. Returns `(mouse_w, mouse_h, hotspots, labels, strip)`.
 fn scaled_model(
     asset: Option<&ResolvedAsset>,
     target_h: f32,
@@ -624,19 +627,12 @@ fn scaled_model(
     thumbwheel: bool,
     label_distribution: LabelDistribution,
     spy: Option<&'static SpyModel>,
-) -> (f32, f32, Vec<Hotspot>, Vec<Label>) {
+) -> (f32, f32, Vec<Hotspot>, Vec<Label>, Option<ModelStrip>) {
     if let Some(a) = asset {
-        let (w, h) = asset_dimensions_for_png(a, target_h, max_w);
-        let mut hotspots = asset_hotspots_for_png(a, w, h);
-        if let Some(model) = spy {
-            merge_spy_hotspots(
-                &mut hotspots,
-                model,
-                (w / MOUSE_MODEL_SIZE.0, h / MOUSE_MODEL_SIZE.1),
-            );
-        }
-        let labels = labels_from_hotspots(&hotspots, h, label_distribution);
-        (w, h, hotspots, labels)
+        let strip = asset_strip(a, target_h, max_w);
+        let hotspots = asset_hotspots(a, &strip);
+        let labels = labels_from_hotspots(&hotspots, strip.h, label_distribution);
+        (strip.w, strip.h, hotspots, labels, Some(strip))
     } else {
         let scale = (target_h / MOUSE_MODEL_SIZE.1).min(max_w / MOUSE_MODEL_SIZE.0);
         let mut hotspots: Vec<Hotspot> = default_hotspots(thumbwheel)
@@ -666,6 +662,7 @@ fn scaled_model(
             MOUSE_MODEL_SIZE.1 * scale,
             hotspots,
             labels,
+            None,
         )
     }
 }
@@ -700,16 +697,41 @@ fn leader_canvas(
 
 fn breathing_art(
     asset: Option<&ResolvedAsset>,
+    strip: Option<ModelStrip>,
     mouse_left: f32,
     mouse_w: f32,
     mouse_h: f32,
     glow: Option<(Arc<GlowGeometry>, Hsla)>,
 ) -> impl IntoElement {
     let device_art: AnyElement = match asset {
-        Some(a) => img(a.image_path.clone())
-            .w(px(mouse_w))
-            .h(px(mouse_h))
-            .into_any_element(),
+        Some(a) => match (
+            strip.and_then(|strip| strip.side.zip(Some(strip.main))),
+            &a.side,
+        ) {
+            (Some((side, main)), Some(side_render)) => div()
+                .relative()
+                .w(px(mouse_w))
+                .h(px(mouse_h))
+                .child(
+                    img(side_render.path.clone())
+                        .absolute()
+                        .left(px(side.x))
+                        .w(px(side.w))
+                        .h(px(mouse_h)),
+                )
+                .child(
+                    img(a.image_path.clone())
+                        .absolute()
+                        .left(px(main.x))
+                        .w(px(main.w))
+                        .h(px(mouse_h)),
+                )
+                .into_any_element(),
+            _ => img(a.image_path.clone())
+                .w(px(mouse_w))
+                .h(px(mouse_h))
+                .into_any_element(),
+        },
         None => Silhouette {
             w: mouse_w,
             h: mouse_h,

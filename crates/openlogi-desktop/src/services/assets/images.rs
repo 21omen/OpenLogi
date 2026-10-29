@@ -120,6 +120,19 @@ pub(super) fn buttons_image_for(
         .map(str::to_string)
 }
 
+/// Like [`variant_image_for`] but returns the `device_side` resource: the
+/// side view a G-series depot marks its thumb buttons on, beside the top
+/// view its `device_image` marks the rest on.
+pub(super) fn side_image_for(
+    manifest: &DepotManifest,
+    base_model_id: &str,
+    ext: u8,
+) -> Option<String> {
+    manifest
+        .resource_for_variant(base_model_id, ext, "device_side")
+        .map(str::to_string)
+}
+
 /// Like [`variant_image_for`] but returns the `image_metadata` resource —
 /// the hotspot-metadata JSON calibrated against this colour variant's
 /// renders. Depots whose variants are *handed* rather than coloured ship no

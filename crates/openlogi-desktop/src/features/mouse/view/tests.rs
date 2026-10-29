@@ -461,7 +461,7 @@ fn active_thumbwheel_directions_highlight_the_paired_control() {
 #[test]
 fn a_spy_model_places_and_labels_its_buttons_on_the_fallback_model() {
     let g502 = SpyModel::for_model_key("14099").expect("the G502 X Plus has a spy row");
-    let (_, _, hotspots, labels) = scaled_model(
+    let (_, _, hotspots, labels, _) = scaled_model(
         None,
         560.,
         420.,
@@ -485,9 +485,10 @@ fn a_spy_model_places_and_labels_its_buttons_on_the_fallback_model() {
 
 #[test]
 fn fallback_model_only_adds_thumbwheel_when_capability_is_measured() {
-    let (_, _, without, _) =
+    let (_, _, without, _, _) =
         scaled_model(None, 560., 420., false, LabelDistribution::LeftOnly, None);
-    let (_, _, with, _) = scaled_model(None, 560., 420., true, LabelDistribution::LeftOnly, None);
+    let (_, _, with, _, _) =
+        scaled_model(None, 560., 420., true, LabelDistribution::LeftOnly, None);
     assert_eq!(
         without
             .iter()

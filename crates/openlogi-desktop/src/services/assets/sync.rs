@@ -171,7 +171,8 @@ fn sync_depot(
 
     // Optional second pass: download the manifest-mapped resources — the
     // colour variant matching the device's `extended_model_id` for the front
-    // (gallery) and side / buttons (mouse-model) views, the camera hero
+    // (gallery) and side / buttons (mouse-model) views, a G-series depot's
+    // side view (`device_side`, where it marks the thumb buttons), the camera hero
     // (`device_camera_image` — camera depots ship no bare `front*.png`, so the
     // baseline fetch above brings no render for them at all), and this
     // variant's hotspot metadata (`image_metadata`, the only place a depot
@@ -181,6 +182,7 @@ fn sync_depot(
     for resource_key in [
         "device_image",
         "device_buttons_image",
+        "device_side",
         "device_camera_image",
         "image_metadata",
     ] {

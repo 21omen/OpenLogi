@@ -1205,6 +1205,7 @@ fn keyboard_with_a_depot_but_no_capabilities_shows_keys_tab() {
         metadata: openlogi_assets::Metadata::default(),
         png_width: 1872,
         png_height: 728,
+        side: None,
     });
     assert!(DetailTab::tabs_for(&keyboard).contains(&DetailTab::Keys));
     assert!(!DetailTab::tabs_for(&record(DeviceKind::Keyboard, None)).contains(&DetailTab::Keys));

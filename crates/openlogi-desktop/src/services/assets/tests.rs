@@ -959,3 +959,75 @@ fn resolves_a_variant_render_in_a_subdirectory() {
     assert_eq!(asset.image_path, dir.join("images/device/top1"));
     assert_eq!(asset.png_width, 1661);
 }
+
+/// A G-series depot (the G502 X Plus) marks its thumb buttons on a side view
+/// (`device_side`) beside its top view. The side view of the device's own
+/// colour variant resolves with its pixel size; a depot without one, or with
+/// the file not yet downloaded, resolves without it.
+#[test]
+fn resolves_the_side_view_of_the_colour_variant() {
+    let root = tempfile::tempdir().expect("create temp dir");
+    let dir = root.path().join("g502x_plus");
+    std::fs::create_dir_all(dir.join("images/device")).expect("create depot dir");
+    std::fs::write(
+        dir.join("manifest.json"),
+        r#"{"devices":[
+            {"modelId":"g502x_plus","resources":[
+                {"key":"device_image","src":"images/device/top0"},
+                {"key":"device_side","src":"images/device/side0"}]},
+            {"modelId":"g502x_plus_ext1","resources":[
+                {"key":"device_image","src":"images/device/top1"},
+                {"key":"device_side","src":"images/device/side1"}]}]}"#,
+    )
+    .expect("write manifest");
+    std::fs::write(
+        dir.join("metadata.json"),
+        r#"{"images":[{"key":"device_image","origin":{"width":1391,"height":2700}}]}"#,
+    )
+    .expect("write metadata");
+    for (name, width) in [("top0", 1662), ("top1", 1661), ("side0", 1157)] {
+        std::fs::write(
+            dir.join("images/device").join(name),
+            png_header(width, 2800),
+        )
+        .expect("write render");
+    }
+    let index = || {
+        index_of(
+            "g502x_plus",
+            DeviceEntry {
+                model_id: "c095".into(),
+                model_ids: vec!["c095".into(), "4099".into()],
+                display_name: "G502 X PLUS".into(),
+                kind: "MOUSE".into(),
+                asset_path: "v1/devices/g502x_plus/".into(),
+                files: registry_files(&["metadata.json", "manifest.json"]),
+            },
+        )
+    };
+    let g502 = |extended_model_id| DeviceModelInfo {
+        model_ids: [0x4099, 0xc095, 0],
+        extended_model_id,
+        ..bare_model()
+    };
+
+    let base = resolver_over(&[root.path()], Some(index()))
+        .resolve(&g502(0), None)
+        .expect("the base variant resolves");
+    assert_eq!(base.image_path, dir.join("images/device/top0"));
+    assert_eq!(
+        base.side,
+        Some(SideRender {
+            path: dir.join("images/device/side0"),
+            png_width: 1157,
+            png_height: 2800,
+        })
+    );
+
+    // Extended model id 1: its top view is cached, its side view is not.
+    let ext1 = resolver_over(&[root.path()], Some(index()))
+        .resolve(&g502(1), None)
+        .expect("the ext1 variant resolves");
+    assert_eq!(ext1.image_path, dir.join("images/device/top1"));
+    assert_eq!(ext1.side, None);
+}

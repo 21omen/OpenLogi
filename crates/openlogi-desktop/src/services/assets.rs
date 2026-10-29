@@ -43,7 +43,7 @@ use walkdir::WalkDir;
 
 use self::images::{
     buttons_image_for, find_variant_in_manifest, load_manifest, metadata_for, read_png_dimensions,
-    variant_image_for,
+    side_image_for, variant_image_for,
 };
 pub(crate) use self::paths::user_cache_root;
 use self::paths::{bundle_assets_root, load_index};
@@ -142,6 +142,19 @@ pub struct ResolvedAsset {
     /// padding on the sides. Without the real PNG size we can't tell
     /// where that padding lives, and hotspot percentages drift off the
     /// real buttons.
+    pub png_width: u32,
+    pub png_height: u32,
+    /// The side view a G-series depot marks its thumb buttons on
+    /// (`device_side`), shown beside [`Self::image_path`]. `None` when the
+    /// depot ships none or it is not in the cache.
+    pub side: Option<SideRender>,
+}
+
+/// A depot's side view and its actual pixel dimensions, which its markers
+/// are placed against as for [`ResolvedAsset::image_path`].
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SideRender {
+    pub path: PathBuf,
     pub png_width: u32,
     pub png_height: u32,
 }
@@ -411,6 +424,9 @@ impl AssetResolver {
                 .then(|| self::glow::resolve_glow_geometry(&dir, &image_path))
                 .flatten()
                 .map(Arc::new);
+            let side = manifest
+                .as_ref()
+                .and_then(|m| resolve_side_render(&dir, m, entry, depot, extended_model_id));
             return Some(ResolvedAsset {
                 depot: depot.to_string(),
                 display_name: entry.display_name.clone(),
@@ -421,6 +437,7 @@ impl AssetResolver {
                 metadata,
                 png_width,
                 png_height,
+                side,
             });
         }
         debug!(depot, "asset cache miss across all roots");
@@ -473,6 +490,7 @@ impl AssetResolver {
                 metadata: Metadata::default(),
                 png_width,
                 png_height,
+                side: None,
             });
         }
         debug!(depot, "standalone asset cache miss across all roots");
@@ -483,6 +501,32 @@ impl AssetResolver {
 impl Default for AssetResolver {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// The colour variant's side view (`device_side`) inside `dir`, when the
+/// manifest names one and it is in the cache.
+fn resolve_side_render(
+    dir: &Path,
+    manifest: &DepotManifest,
+    entry: &DeviceEntry,
+    depot: &str,
+    extended_model_id: u8,
+) -> Option<SideRender> {
+    let name = find_variant_in_manifest(manifest, entry, depot, extended_model_id, side_image_for)?;
+    let path = safe_asset_path(dir, &name, "asset file")
+        .ok()
+        .filter(|path| path.is_file())?;
+    match read_png_dimensions(&path) {
+        Ok((png_width, png_height)) => Some(SideRender {
+            path,
+            png_width,
+            png_height,
+        }),
+        Err(e) => {
+            warn!(path = %path.display(), error = %e, "side view unreadable — not shown");
+            None
+        }
     }
 }
 
