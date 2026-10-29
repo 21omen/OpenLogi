@@ -12,9 +12,12 @@ use openlogi_core::binding::ButtonId;
 use tracing::{debug, warn};
 
 use super::main_wheel::{self, ArmedMainWheel, MainWheelDivert};
+use super::spy::{ArmedSpy, arm_spy};
 use super::{CaptureSpec, CapturedInput};
 use crate::reprog_controls::{self, ReprogControlsV4};
-use crate::session::capture::{ReportingChangeStream, open_device, subscribe_reporting_changes};
+use crate::session::capture::{
+    Rearm, ReportingChangeStream, open_device, subscribe_reporting_changes,
+};
 use crate::session::capture_restore::{
     ArmedReporting, CaptureError, CaptureSessionFailure, HiResWheelRestore, PendingCaptureRestore,
     PointerDivert, ReprogRestore, ThumbwheelRestore,
@@ -61,6 +64,8 @@ pub(super) struct ArmedControls {
     pub(super) thumb: Option<ArmedThumbwheel>,
     /// `0x2121` main wheel, present when its movement reports are diverted.
     pub(super) main_wheel: Option<ArmedMainWheel>,
+    /// Host-mode `0x8110` spy capture, present while it owns buttons.
+    pub(super) spy: Option<ArmedSpy>,
 }
 
 pub(super) struct ArmedThumbwheel {
@@ -117,6 +122,7 @@ impl ArmedControls {
             reporting,
             thumb,
             main_wheel,
+            spy,
             ..
         } = self;
         let reprog =
@@ -128,11 +134,16 @@ impl ArmedControls {
             main_wheel
                 .as_ref()
                 .map(|wheel| HiResWheelRestore::new(wheel.feature_index)),
+            spy.as_ref().map(ArmedSpy::restore),
         )
     }
 
     /// Reapply volatile diversion after a wireless reconnect broadcast.
-    pub(super) async fn rearm(&self) {
+    ///
+    /// A Host-mode capture whose re-arm fails asks for a restart: the mouse
+    /// may then sit in Host mode with its buttons suppressed and no spy
+    /// reporting them, which no later broadcast is guaranteed to repair.
+    pub(super) async fn rearm(&self) -> Rearm {
         if let Some(rc) = self.reprog.as_ref() {
             for &reporting in &self.reporting {
                 if let Err(error) = rc
@@ -157,6 +168,13 @@ impl ArmedControls {
         {
             warn!(?error, "main-wheel re-divert after wake failed");
         }
+        if let Some(spy) = self.spy.as_ref()
+            && let Err(error) = spy.apply().await
+        {
+            warn!(?error, "Host-mode re-arm after wake failed");
+            return Rearm::Restart;
+        }
+        Rearm::Done
     }
 }
 
@@ -189,6 +207,7 @@ pub(super) async fn arm_controls(
         && armed.wheel_button_cids.is_empty()
         && armed.thumb.is_none()
         && armed.main_wheel.is_none()
+        && armed.spy.is_none()
     {
         debug!(slot, "no capturable controls — idle session");
     }
@@ -284,6 +303,10 @@ pub(super) async fn arm_controls_into(
         && let Some(info) = device.root().get_feature(HiResWheelFeature::ID).await?
     {
         arm_main_wheel(chan, slot, info.index, requested, armed).await?;
+    }
+
+    if let Some(spy) = &spec.spy {
+        arm_spy(device, chan, slot, spy, armed).await?;
     }
     Ok(())
 }

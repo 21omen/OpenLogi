@@ -20,6 +20,7 @@ mod foreign_change;
 mod main_wheel;
 mod restore;
 mod session;
+mod spy;
 mod thumb_wheel;
 mod wheel_hold;
 

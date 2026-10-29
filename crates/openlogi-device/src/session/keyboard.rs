@@ -28,7 +28,7 @@ use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 use super::capture::{
-    ArmedCapture, CaptureHost, Liveness, ReportingChangeStream, open_device, run_capture,
+    ArmedCapture, CaptureHost, Liveness, Rearm, ReportingChangeStream, open_device, run_capture,
     subscribe_reporting_changes,
 };
 use super::capture_restore::{ArmedReporting, ReprogRestore, divert_keyboard_key};
@@ -200,7 +200,7 @@ impl ArmedCapture for ArmedKeys {
         }
     }
 
-    async fn rearm(&self) {
+    async fn rearm(&self) -> Rearm {
         for &reporting in &self.reporting {
             if let Err(e) = self
                 .controls
@@ -214,6 +214,7 @@ impl ArmedCapture for ArmedKeys {
                 );
             }
         }
+        Rearm::Done
     }
 
     fn armed_reporting(&self) -> Option<(&ReprogControlsV4, &[ArmedReporting])> {
@@ -230,6 +231,7 @@ impl ArmedCapture for ArmedKeys {
         PendingCaptureRestore::new(
             retired,
             ReprogRestore::new(feature_index, self.reporting),
+            None,
             None,
             None,
         )

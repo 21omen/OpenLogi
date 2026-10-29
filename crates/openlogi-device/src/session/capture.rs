@@ -127,6 +127,18 @@ pub(super) fn subscribe_reporting_changes(controls: &ReprogControlsV4) -> Report
     Box::pin(controls.reporting_changes())
 }
 
+/// What a wake re-arm left behind.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Rearm {
+    /// Every control is captured again, or one whose re-arm failed is back on
+    /// its native function until the next reconnection broadcast retries it.
+    Done,
+    /// A control is neither captured nor native — a Host-mode mouse whose
+    /// spy did not restart. The session stops so teardown hands it back and
+    /// its supervisor arms a fresh one.
+    Restart,
+}
+
 /// The device-specific half of a capture session: the controls one session
 /// armed, what their reports mean, and how they are re-armed and handed back.
 /// [`run_capture`] owns the rest.
@@ -150,9 +162,11 @@ pub(super) trait ArmedCapture {
     /// Forget input state that a device power-cycle invalidated.
     fn reset_input_state(&self) {}
 
-    /// Re-issue every diversion after a wireless reconnect. Failures are
-    /// logged, not propagated: the next reconnection broadcast retries.
-    async fn rearm(&self);
+    /// Re-issue every diversion after a wireless reconnect. A failure that
+    /// leaves its control native is logged, not propagated: the next
+    /// reconnection broadcast retries. One that leaves it dead returns
+    /// [`Rearm::Restart`].
+    async fn rearm(&self) -> Rearm;
 
     /// The `0x1b04` accessor and every control armed through it, or `None`
     /// when this capture armed no `0x1b04` control. The session diverts one
@@ -417,8 +431,9 @@ async fn monitor<A: ArmedCapture>(
                 info!(?broadcast, capture = A::NAME, "device reconnected — re-arming capture");
                 context.armed.reset_input_state();
                 tokio::time::sleep(REARM_SETTLE_DELAY).await;
-                if device_io.allows_io() {
-                    context.armed.rearm().await;
+                if device_io.allows_io() && context.armed.rearm().await == Rearm::Restart {
+                    warn!(index = context.device_index, capture = A::NAME, "wake re-arm left a control dead — restarting capture");
+                    return stop_for_current_publication(context.registry, context.shared);
                 }
             }
             echo = changes.next() => {

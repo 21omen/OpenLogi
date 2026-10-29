@@ -1,10 +1,11 @@
 //! Sans-I/O accumulator for diverted `0x1b04` reports: which armed source
 //! holds the raw-XY stream, the button edges and gestures that follow, and
-//! which held wheel-hold button the raw wheel belongs to.
+//! which held wheel-hold button the raw wheel belongs to. It also keeps the
+//! last `0x8110` spy mask, whose changes are the Host-mode buttons' edges.
 
 use std::num::NonZeroU8;
 
-use openlogi_core::binding::{ButtonId, GestureDirection, SwipeAccumulator};
+use openlogi_core::binding::{ButtonId, GestureDirection, SpyModel, SwipeAccumulator};
 use tokio::sync::mpsc;
 use tracing::{debug, trace};
 
@@ -72,6 +73,8 @@ pub(super) struct CaptureAccum {
     /// Diverted standard-button and wheel-hold CIDs held in the last event,
     /// in press order.
     buttons_down: Vec<u16>,
+    /// The last `0x8110` spy mask, for press and release edges.
+    spy_mask: u16,
 }
 
 #[cfg(test)]
@@ -106,6 +109,25 @@ fn captured_gesture_button(cid: u16, gesture_button_cids: &[(u16, ButtonId)]) ->
 }
 
 impl CaptureAccum {
+    /// Emit the press and release of every armed Host-mode button whose bit
+    /// changed since the last spy mask.
+    pub(super) fn on_spy_mask(
+        &mut self,
+        mask: u16,
+        model: &SpyModel,
+        armed: &[ButtonId],
+        sink: &mpsc::UnboundedSender<CapturedInput>,
+    ) {
+        for (button, down) in model.edges(self.spy_mask, mask, armed) {
+            let _ = sink.send(if down {
+                CapturedInput::ButtonDown(button)
+            } else {
+                CapturedInput::ButtonUp(button)
+            });
+        }
+        self.spy_mask = mask;
+    }
+
     /// Update the accumulator and emit on a decoded `0x1b04` event: preserve
     /// physical button edges, and commit a gesture swipe the instant it
     /// crosses the threshold (mid-swipe, like Options+) rather than on release.
