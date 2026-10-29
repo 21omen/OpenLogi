@@ -155,23 +155,6 @@ impl Binding {
         }
     }
 
-    /// Whether any arm of this binding does something.
-    ///
-    /// Unlike a [`click_action`](Self::click_action) check, this counts a
-    /// [`LongPress`](Binding::LongPress) whose short action is
-    /// [`Action::None`]: its long arm still has to be captured.
-    #[must_use]
-    pub fn has_configured_action(&self) -> bool {
-        match self {
-            Binding::Single(action) => *action != Action::None,
-            Binding::Gesture(map) => map.values().any(|action| *action != Action::None),
-            Binding::LongPress(binding) => {
-                *binding.short() != Action::None || *binding.long() != Action::None
-            }
-            Binding::WheelHold(_) => true,
-        }
-    }
-
     /// The action bound to `direction`, if this is a gesture binding.
     /// The other shapes have no directions and return `None`.
     #[must_use]

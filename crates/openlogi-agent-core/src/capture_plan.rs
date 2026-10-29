@@ -1160,7 +1160,10 @@ mod tests {
         );
         let plan = g502_plan(&cfg);
         let spy = plan.target.spec.spy.expect("Host mode claimed");
-        assert_eq!(spy.buttons, [ButtonId::Back]);
+        // Host mode also breaks the extras' job, so they come along.
+        let mut expected = vec![ButtonId::Back];
+        expected.extend(G502_EXTRAS);
+        assert_eq!(spy.buttons, expected);
         assert!(
             plan.target
                 .spec
@@ -1171,6 +1174,32 @@ mod tests {
         assert!(
             plan.dispatch.bindings.contains_key(&ButtonId::Back),
             "dispatch still resolves the button the spy reports"
+        );
+    }
+
+    /// On the extended-id-1 G502 the wheel tilts report through the spy, so
+    /// Host mode takes them over and a remapped tilt leaves the `0x1b04`
+    /// divert set like any other spy-owned button.
+    #[test]
+    fn host_mode_on_the_extended_id_1_g502_takes_the_wheel_tilts() {
+        let mut cfg = Config::default();
+        cfg.set_binding(
+            "unit:00000001",
+            ButtonId::WheelTiltLeft,
+            Binding::Single(Action::PreviousDesktop),
+        );
+        let mut plan = plan_for_device(&cfg, "unit:00000001", route(), None, 0, true);
+        plan.claim_spy(SpyModel::for_model_key("14099").expect("row"));
+        let spy = plan.target.spec.spy.expect("Host mode claimed");
+        assert!(spy.buttons.contains(&ButtonId::WheelTiltLeft));
+        assert!(spy.buttons.contains(&ButtonId::WheelTiltRight));
+        assert!(G502_EXTRAS.iter().all(|extra| spy.buttons.contains(extra)));
+        assert!(
+            plan.target
+                .spec
+                .divert_buttons
+                .iter()
+                .all(|&(_, button)| !spy.buttons.contains(&button))
         );
     }
 }

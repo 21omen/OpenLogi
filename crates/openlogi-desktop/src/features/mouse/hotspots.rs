@@ -134,10 +134,12 @@ const REPROG_ONLY: [ButtonId; 3] = [
 /// button the silhouette has no place for.
 ///
 /// Placeholders until the device image places them: the G502 X Plus's G6
-/// takes the left-thumb slot, G7/G8 flank the DPI pad and G9 sits behind
-/// them.
+/// takes the left-thumb slot, G7/G8 flank the DPI pad, G9 sits behind them
+/// and the wheel tilts flank the wheel.
 fn silhouette_slot(button: ButtonId) -> Option<(f32, f32, f32, f32)> {
     match button {
+        ButtonId::WheelTiltLeft => Some((146., 120., 30., 60.)),
+        ButtonId::WheelTiltRight => Some((244., 120., 30., 60.)),
         ButtonId::DpiShift => Some((8., 380., 44., 80.)),
         ButtonId::DpiDown => Some((130., 226., 48., 44.)),
         ButtonId::DpiUp => Some((242., 226., 48., 44.)),
@@ -146,9 +148,9 @@ fn silhouette_slot(button: ButtonId) -> Option<(f32, f32, f32, f32)> {
     }
 }
 
-/// Swap `hotspots`' `0x1b04`-only controls for `model`'s extra buttons,
-/// placed on the silhouette scaled by `scale`. An extra the image already
-/// places keeps that place.
+/// Swap `hotspots`' `0x1b04`-only controls for `model`'s buttons, placed on
+/// the silhouette scaled by `scale`. A button the image already places keeps
+/// that place.
 pub fn merge_spy_hotspots(hotspots: &mut Vec<Hotspot>, model: &SpyModel, scale: (f32, f32)) {
     hotspots.retain(|hotspot| {
         hotspot
@@ -156,7 +158,7 @@ pub fn merge_spy_hotspots(hotspots: &mut Vec<Hotspot>, model: &SpyModel, scale: 
             .button()
             .is_none_or(|button| !REPROG_ONLY.contains(&button))
     });
-    for &button in model.extra_buttons() {
+    for button in model.buttons() {
         if hotspots.iter().any(|existing| existing.id == button.into()) {
             continue;
         }
@@ -231,14 +233,14 @@ mod tests {
     }
 
     fn g502() -> &'static SpyModel {
-        SpyModel::for_model_key("04099").expect("the G502 X Plus has a spy row")
+        SpyModel::for_model_key("14099").expect("the G502 X Plus has a spy row")
     }
 
     #[test]
     fn a_spy_model_swaps_reprog_only_controls_for_its_extras() {
         let mut hotspots = default_hotspots(false);
         merge_spy_hotspots(&mut hotspots, g502(), (1., 1.));
-        for &button in g502().extra_buttons() {
+        for button in g502().buttons() {
             assert_eq!(
                 hotspots
                     .iter()

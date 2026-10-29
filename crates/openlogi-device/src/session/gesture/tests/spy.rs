@@ -495,3 +495,37 @@ async fn a_failed_wake_rearm_restarts_the_session_with_the_mouse_handed_back() {
     assert!(matches!(outcome, Ok(CaptureSessionOutcome::Restored)));
     assert_eq!(now(&mouse), ON_BOARD);
 }
+
+/// The extended-id-1 G502 reports its wheel tilts on bits 6 and 7; in Host
+/// mode they arrive as the tilt buttons, not as the mouse buttons 7 and 8
+/// their mapping slots would send.
+#[tokio::test]
+async fn the_extended_id_1_tilts_reach_the_dispatcher_as_tilt_buttons() {
+    let ext1 = SpyModel::for_model_key("14099").expect("the extended-id-1 G502 has a row");
+    let spec = CaptureSpec {
+        spy: Some(SpyCapture {
+            model: ext1,
+            buttons: vec![ButtonId::WheelTiltLeft, ButtonId::WheelTiltRight],
+        }),
+        ..CaptureSpec::default()
+    };
+    let armed = arm(ON_BOARD, Behavior::default(), &spec).await;
+    armed.result.unwrap();
+    assert_eq!(
+        now(&armed.mouse).mapping,
+        [1, 2, 3, 4, 5, 6, 0, 0, 9, 10, 11]
+    );
+    let capture = GestureCapture::new(armed.controls);
+    let (sink, mut inputs) = mpsc::unbounded_channel();
+    let handler = capture.report_handler(0xff, sink);
+    handler(&spy_event(0xff, FILTER, 0, 1 << 6));
+    handler(&spy_event(0xff, FILTER, 0, 1 << 7));
+    assert_eq!(
+        std::iter::from_fn(|| inputs.try_recv().ok()).collect::<Vec<_>>(),
+        [
+            CapturedInput::ButtonDown(ButtonId::WheelTiltLeft),
+            CapturedInput::ButtonUp(ButtonId::WheelTiltLeft),
+            CapturedInput::ButtonDown(ButtonId::WheelTiltRight),
+        ]
+    );
+}

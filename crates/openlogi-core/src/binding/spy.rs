@@ -1,18 +1,27 @@
-//! The mice whose extra buttons are remapped in HID++ Host mode, and what
-//! their `0x8110` button-spy bits mean.
+//! The mice whose buttons are remapped in HID++ Host mode, and what their
+//! `0x8110` button-spy bits mean.
 //!
-//! A gaming mouse without `0x1b04` cannot divert its extra buttons. Instead
-//! the session switches the mouse to Host mode (`0x8100`), zeroes those
-//! buttons' slots in the `0x8110` HID mapping so the OS stops seeing them, and
-//! reads presses from the button-spy mask. Host mode also pauses the onboard
-//! profiles, so the firmware's own DPI buttons stop working while it is on.
+//! A gaming mouse without `0x1b04` cannot divert its buttons. Instead the
+//! session switches the mouse to Host mode (`0x8100`), zeroes the slots of the
+//! buttons it takes over in the `0x8110` HID mapping so the OS stops seeing
+//! them, and reads their presses from the button-spy mask.
+//!
+//! Host mode changes what every other button sends, too: onboard profiles
+//! pause, and slot *n* reports plain mouse button *n + 1*. For the side
+//! buttons that is still their job (G4/G5 report buttons 4 and 6, Back and
+//! Forward). For the rest it is not: the G502's DPI and profile buttons lose
+//! their firmware function, its sniper button G6 would report button 5 — which
+//! the OS takes for Forward — and its wheel tilts stop scrolling and report
+//! buttons 7 and 8. So once a mouse is in Host mode, the session takes over
+//! every button of its table except those that keep their job, and a side
+//! button only while it is remapped.
 //!
 //! Each supported model is one [`SpyModel`] row in [`SPY_MODELS`], keyed by
 //! its HID++ model key ([`DeviceModelInfo::model_key`]). The row is the single
-//! owner of everything model-specific: which extra buttons exist, which OS
-//! side buttons the spy takes over when remapped, and the bit of the spy mask
-//! (= the slot of the mapping) each one reports on. The capture session, the
-//! agent's plan and the GUI all read it from here.
+//! owner of everything model-specific: which button each bit of the spy mask
+//! (= each slot of the mapping) reports, and which of them keep their job in
+//! Host mode. The capture session, the agent's plan and the GUI all read it
+//! from here.
 //!
 //! # Adding a model
 //!
@@ -21,13 +30,13 @@
 //!
 //! 1. Quit Options+ / G HUB so OpenLogi owns the receiver.
 //! 2. Run `openlogi diag mouse-buttons --watch`, press each button, and note
-//!    bit → button.
-//! 3. Add a row. List the side buttons (Back/Forward) in
-//!    `spy_owned_os_buttons` only when the mouse has no `0x1b04`: otherwise
-//!    that feature already diverts them.
+//!    bit → button. Leave a button out rather than guess its bit: Host mode
+//!    then leaves it as the mapping says.
+//! 3. Add a row. List in `host_native` the buttons whose Host-mode mapping code
+//!    still does their own job.
 //!
-//! The extra buttons stay out of [`ButtonId::ALL`]: that list seeds every
-//! mouse's defaults and popover.
+//! A model's extra buttons (the G502's G6–G9) stay out of [`ButtonId::ALL`]:
+//! that list seeds every mouse's defaults and popover.
 //!
 //! [`DeviceModelInfo::model_key`]: crate::device::DeviceModelInfo::model_key
 
@@ -70,22 +79,15 @@ impl SpyBit {
     }
 }
 
-/// A mouse whose extra buttons are remapped in Host mode through `0x8110`.
+/// A mouse whose buttons are remapped in Host mode through `0x8110`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct SpyModel {
     model_key: &'static str,
-    extra_buttons: &'static [ButtonId],
-    spy_owned_os_buttons: &'static [ButtonId],
     bits: &'static [SpyBit],
+    /// The buttons of `bits` whose Host-mode mapping code still does their
+    /// own job: taken over only while remapped.
+    host_native: &'static [ButtonId],
 }
-
-/// G6–G9 of the G502 X Plus.
-const G502_X_PLUS_EXTRAS: [ButtonId; 4] = [
-    ButtonId::DpiShift,
-    ButtonId::DpiUp,
-    ButtonId::DpiDown,
-    ButtonId::ProfileCycle,
-];
 
 /// The spy bits of the G502 X Plus reporting extended model id 0, from the
 /// live `diag mouse-buttons --watch` of the original Host-mode work.
@@ -101,11 +103,14 @@ const G502_X_PLUS_BITS: [SpyBit; 6] = [
 /// The spy bits of the G502 X Plus reporting extended model id 1 (wpid 4099
 /// on a LIGHTSPEED receiver `046d:c547`, model ids `4099 c095 0000`), from
 /// its own live `diag mouse-buttons --watch` (11 slots, mapping `01..0b`).
-/// They match the extended-id-0 dump, which this row does not rely on.
-const G502_X_PLUS_EXT1_BITS: [SpyBit; 6] = [
+/// Bits 3–5 and 8–10 match the extended-id-0 dump, which this row does not
+/// rely on; that dump did not record the wheel tilts.
+const G502_X_PLUS_EXT1_BITS: [SpyBit; 8] = [
     SpyBit::new(3, ButtonId::Back),
     SpyBit::new(4, ButtonId::DpiShift),
     SpyBit::new(5, ButtonId::Forward),
+    SpyBit::new(6, ButtonId::WheelTiltLeft),
+    SpyBit::new(7, ButtonId::WheelTiltRight),
     SpyBit::new(8, ButtonId::ProfileCycle),
     SpyBit::new(9, ButtonId::DpiUp),
     SpyBit::new(10, ButtonId::DpiDown),
@@ -116,19 +121,14 @@ const SPY_MODELS: [SpyModel; 2] = [
     SpyModel {
         // G502 X Plus, wpid 4099, extended model id 0.
         model_key: "04099",
-        extra_buttons: &G502_X_PLUS_EXTRAS,
-        // No `0x1b04`: a remapped G4/G5 must leave the HID mapping, or the OS
-        // keeps seeing hardware Back/Forward.
-        spy_owned_os_buttons: &[ButtonId::Back, ButtonId::Forward],
         bits: &G502_X_PLUS_BITS,
+        host_native: &[ButtonId::Back, ButtonId::Forward],
     },
     SpyModel {
         // G502 X Plus, wpid 4099, extended model id 1.
         model_key: "14099",
-        extra_buttons: &G502_X_PLUS_EXTRAS,
-        // No `0x1b04` either.
-        spy_owned_os_buttons: &[ButtonId::Back, ButtonId::Forward],
         bits: &G502_X_PLUS_EXT1_BITS,
+        host_native: &[ButtonId::Back, ButtonId::Forward],
     },
 ];
 
@@ -145,42 +145,31 @@ impl SpyModel {
         self.model_key
     }
 
-    /// The model's extra buttons, which no other mouse has. Kept out of
-    /// [`ButtonId::ALL`].
-    #[must_use]
-    pub fn extra_buttons(&self) -> &'static [ButtonId] {
-        self.extra_buttons
+    /// Every button the spy can report on this model, in table order.
+    pub fn buttons(&self) -> impl Iterator<Item = ButtonId> + '_ {
+        self.bits.iter().map(|bit| bit.button)
     }
 
     /// The buttons a capture session takes over in Host mode under
     /// `bindings`, in table order; empty when it needs no Host mode.
     ///
-    /// One configured extra takes the whole extra cluster, since Host mode
-    /// stops the firmware's own function for all of them. A side button
-    /// joins only while it leaves its native function, so an unbound G4/G5
-    /// stays firmware-native.
+    /// Any button of the table that leaves its default puts the mouse in
+    /// Host mode. Every button whose job Host mode breaks is then taken over,
+    /// bound or not, so none reports a mapping code in its place; a button
+    /// that keeps its job joins only while it is remapped, so an unbound
+    /// G4/G5 stays firmware-native.
     #[must_use]
     pub fn armed_buttons(&self, bindings: &BTreeMap<ButtonId, Binding>) -> Vec<ButtonId> {
-        let extras_configured = self.extra_buttons.iter().any(|button| {
+        let remapped = |button: ButtonId| {
             bindings
-                .get(button)
-                .is_some_and(Binding::has_configured_action)
-        });
-        let side_remapped = |button: &ButtonId| {
-            bindings
-                .get(button)
-                .is_some_and(|binding| leaves_native(*button, binding))
+                .get(&button)
+                .is_some_and(|binding| leaves_default(button, binding))
         };
-        self.bits
-            .iter()
-            .map(|bit| bit.button)
-            .filter(|button| {
-                if self.extra_buttons.contains(button) {
-                    extras_configured
-                } else {
-                    self.spy_owned_os_buttons.contains(button) && side_remapped(button)
-                }
-            })
+        if !self.buttons().any(remapped) {
+            return Vec::new();
+        }
+        self.buttons()
+            .filter(|button| !self.host_native.contains(button) || remapped(*button))
             .collect()
     }
 
@@ -213,9 +202,8 @@ impl SpyModel {
     }
 }
 
-/// Whether a side button bound to `binding` does anything but its native
-/// click.
-fn leaves_native(button: ButtonId, binding: &Binding) -> bool {
+/// Whether `button` bound to `binding` does anything but its default.
+fn leaves_default(button: ButtonId, binding: &Binding) -> bool {
     match binding {
         Binding::Single(action) => *action != default_binding(button),
         Binding::Gesture(_) | Binding::LongPress(_) | Binding::WheelHold(_) => true,
@@ -231,12 +219,25 @@ mod tests {
         SpyModel::for_model_key("04099").expect("the G502 X Plus has a row")
     }
 
+    fn ext1() -> &'static SpyModel {
+        SpyModel::for_model_key("14099").expect("the extended-id-1 G502 has a row")
+    }
+
+    const EXTRAS: [ButtonId; 4] = [
+        ButtonId::DpiShift,
+        ButtonId::ProfileCycle,
+        ButtonId::DpiUp,
+        ButtonId::DpiDown,
+    ];
+
+    fn single(button: ButtonId, action: Action) -> BTreeMap<ButtonId, Binding> {
+        BTreeMap::from([(button, Binding::Single(action))])
+    }
+
     #[test]
     fn only_recorded_models_have_a_row() {
-        assert_eq!(g502().extra_buttons(), G502_X_PLUS_EXTRAS.as_slice());
-        let ext1 = SpyModel::for_model_key("14099").expect("the extended-id-1 G502 has a row");
-        assert_eq!(ext1.model_key(), "14099");
-        assert_eq!(ext1.extra_buttons(), G502_X_PLUS_EXTRAS.as_slice());
+        assert_eq!(g502().model_key(), "04099");
+        assert_eq!(ext1().model_key(), "14099");
         assert_eq!(SpyModel::for_model_key("2b042"), None);
         assert_eq!(SpyModel::for_model_key("0409f"), None);
     }
@@ -244,28 +245,27 @@ mod tests {
     #[test]
     fn every_row_is_consistent() {
         for model in &SPY_MODELS {
-            for button in model.extra_buttons {
-                assert!(!ButtonId::ALL.contains(button), "{button:?} in ALL");
-                assert_eq!(default_binding(*button), Action::None);
-                assert!(!button.is_os_hook_button());
-            }
-            for button in model.extra_buttons.iter().chain(model.spy_owned_os_buttons) {
-                assert_eq!(
-                    model
-                        .bits
-                        .iter()
-                        .filter(|bit| bit.button == *button)
-                        .count(),
-                    1,
-                    "{button:?} needs exactly one bit on {}",
-                    model.model_key
-                );
-            }
             for (index, bit) in model.bits.iter().enumerate() {
                 assert!(
-                    model.bits[..index].iter().all(|other| other.bit != bit.bit),
-                    "bit {} listed twice on {}",
+                    model.bits[..index]
+                        .iter()
+                        .all(|other| other.bit != bit.bit && other.button != bit.button),
+                    "bit {} or {:?} listed twice on {}",
                     bit.bit,
+                    bit.button,
+                    model.model_key
+                );
+                if !ButtonId::ALL.contains(&bit.button) {
+                    // An extra seeds no default, so an unbound one never
+                    // enters Host mode.
+                    assert_eq!(default_binding(bit.button), Action::None);
+                    assert!(!bit.button.is_os_hook_button());
+                }
+            }
+            for button in model.host_native {
+                assert!(
+                    model.buttons().any(|listed| listed == *button),
+                    "{button:?} keeps its job but has no bit on {}",
                     model.model_key
                 );
             }
@@ -274,20 +274,59 @@ mod tests {
 
     #[test]
     fn unbound_model_needs_no_host_mode() {
-        assert!(g502().armed_buttons(&BTreeMap::new()).is_empty());
-        let unbound = BTreeMap::from([
+        assert!(ext1().armed_buttons(&BTreeMap::new()).is_empty());
+        let defaults = BTreeMap::from([
             (ButtonId::DpiUp, Binding::Single(Action::None)),
             (ButtonId::Back, Binding::Single(Action::MouseBack)),
+            (
+                ButtonId::WheelTiltLeft,
+                Binding::Single(Action::HorizontalScrollLeft),
+            ),
         ]);
-        assert!(g502().armed_buttons(&unbound).is_empty());
+        assert!(ext1().armed_buttons(&defaults).is_empty());
+    }
+
+    /// One bound extra puts the mouse in Host mode, which takes over every
+    /// button whose job it breaks — the other extras and the wheel tilts —
+    /// but leaves the unbound side buttons native.
+    #[test]
+    fn host_mode_takes_every_button_it_breaks() {
+        let armed = ext1().armed_buttons(&single(ButtonId::DpiUp, Action::Copy));
+        assert_eq!(
+            armed,
+            [
+                ButtonId::DpiShift,
+                ButtonId::WheelTiltLeft,
+                ButtonId::WheelTiltRight,
+                ButtonId::ProfileCycle,
+                ButtonId::DpiUp,
+                ButtonId::DpiDown,
+            ]
+        );
     }
 
     #[test]
-    fn one_configured_extra_arms_the_whole_cluster() {
-        let bindings = BTreeMap::from([(ButtonId::DpiUp, Binding::Single(Action::Copy))]);
+    fn a_remapped_tilt_alone_enters_host_mode() {
+        let armed = ext1().armed_buttons(&single(ButtonId::WheelTiltRight, Action::NextDesktop));
+        assert!(armed.contains(&ButtonId::WheelTiltRight));
+        assert!(armed.contains(&ButtonId::WheelTiltLeft));
+        assert!(EXTRAS.iter().all(|extra| armed.contains(extra)));
+        assert!(!armed.contains(&ButtonId::Back));
+    }
+
+    /// A remapped side button enters Host mode too, and then G6 must be
+    /// taken over: its mapping code would otherwise reach the OS as Forward.
+    #[test]
+    fn a_remapped_side_button_takes_the_broken_buttons_along() {
+        let bindings = BTreeMap::from([
+            (ButtonId::Back, Binding::Single(Action::PreviousDesktop)),
+            (ButtonId::Forward, Binding::Single(Action::MouseForward)),
+        ]);
+        let armed = g502().armed_buttons(&bindings);
         assert_eq!(
-            g502().armed_buttons(&bindings),
+            armed,
             [
+                ButtonId::Back,
                 ButtonId::DpiShift,
                 ButtonId::ProfileCycle,
                 ButtonId::DpiUp,
@@ -297,39 +336,28 @@ mod tests {
     }
 
     #[test]
-    fn click_less_long_press_arms_the_cluster() {
+    fn click_less_long_press_enters_host_mode() {
         let bindings = BTreeMap::from([(
             ButtonId::DpiShift,
             Binding::LongPress(LongPressBinding::new(Action::None, Action::MissionControl)),
         )]);
-        assert_eq!(g502().armed_buttons(&bindings).len(), 4);
+        assert_eq!(g502().armed_buttons(&bindings), EXTRAS);
     }
 
-    #[test]
-    fn a_remapped_side_button_joins_alone() {
-        let bindings = BTreeMap::from([
-            (ButtonId::Back, Binding::Single(Action::PreviousDesktop)),
-            (ButtonId::Forward, Binding::Single(Action::MouseForward)),
-        ]);
-        assert_eq!(g502().armed_buttons(&bindings), [ButtonId::Back]);
-    }
-
-    /// The extended-id-1 row against its own dump: G8 is bit 9, and arming
-    /// the extras zeroes slots 4, 8, 9 and 10 of mapping `01..0b`.
+    /// The extended-id-1 row against its own dump: G8 is bit 9, the tilts
+    /// bits 6 and 7, and Host mode zeroes slots 4 and 6–10 of mapping
+    /// `01..0b`.
     #[test]
     fn the_extended_id_1_row_follows_its_own_dump() {
-        let ext1 = SpyModel::for_model_key("14099").expect("row");
-        let armed = ext1.armed_buttons(&BTreeMap::from([(
-            ButtonId::DpiUp,
-            Binding::Single(Action::Copy),
-        )]));
-        assert_eq!(armed.len(), 4);
-        let down: Vec<_> = ext1.edges(0, 1 << 9, &armed).collect();
+        let armed = ext1().armed_buttons(&single(ButtonId::DpiUp, Action::Copy));
+        let down: Vec<_> = ext1().edges(0, 1 << 9, &armed).collect();
         assert_eq!(down, [(ButtonId::DpiUp, true)]);
+        let tilt: Vec<_> = ext1().edges(0, 1 << 6, &armed).collect();
+        assert_eq!(tilt, [(ButtonId::WheelTiltLeft, true)]);
         let mapping: Vec<u8> = (1..=11).collect();
         assert_eq!(
-            ext1.suppressed_mapping(&mapping, &armed),
-            [1, 2, 3, 4, 0, 6, 7, 8, 0, 0, 0]
+            ext1().suppressed_mapping(&mapping, &armed),
+            [1, 2, 3, 4, 0, 6, 0, 0, 0, 0, 0]
         );
     }
 
@@ -354,7 +382,7 @@ mod tests {
     #[test]
     fn suppression_zeroes_only_armed_slots() {
         let mapping: Vec<u8> = (1..=11).collect();
-        let extras = g502().suppressed_mapping(&mapping, &G502_X_PLUS_EXTRAS);
+        let extras = g502().suppressed_mapping(&mapping, &EXTRAS);
         assert_eq!(extras, [1, 2, 3, 4, 0, 6, 7, 8, 0, 0, 0]);
         let back = g502().suppressed_mapping(&mapping, &[ButtonId::Back]);
         assert_eq!(back, [1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11]);
@@ -363,9 +391,6 @@ mod tests {
     #[test]
     fn suppression_ignores_slots_beyond_a_short_mapping() {
         let short = [1, 2, 3, 4, 5];
-        assert_eq!(
-            g502().suppressed_mapping(&short, &G502_X_PLUS_EXTRAS),
-            [1, 2, 3, 4, 0]
-        );
+        assert_eq!(g502().suppressed_mapping(&short, &EXTRAS), [1, 2, 3, 4, 0]);
     }
 }

@@ -455,11 +455,12 @@ fn active_thumbwheel_directions_highlight_the_paired_control() {
     );
 }
 
-/// On the fallback silhouette a spy model's extras take the place of the
-/// controls only `0x1b04` captures, each with a hotspot and a label.
+/// On the fallback silhouette a spy model's buttons — the extras and the
+/// wheel tilts — take the place of the controls only `0x1b04` captures, each
+/// with a hotspot and a label.
 #[test]
-fn a_spy_model_places_and_labels_its_extras_on_the_fallback_model() {
-    let g502 = SpyModel::for_model_key("04099").expect("the G502 X Plus has a spy row");
+fn a_spy_model_places_and_labels_its_buttons_on_the_fallback_model() {
+    let g502 = SpyModel::for_model_key("14099").expect("the G502 X Plus has a spy row");
     let (_, _, hotspots, labels) = scaled_model(
         None,
         560.,
@@ -468,7 +469,7 @@ fn a_spy_model_places_and_labels_its_extras_on_the_fallback_model() {
         LabelDistribution::LeftOnly,
         Some(g502),
     );
-    for &button in g502.extra_buttons() {
+    for button in g502.buttons() {
         let id = MouseControlId::Button(button);
         assert!(
             hotspots.iter().any(|hotspot| hotspot.id == id),
