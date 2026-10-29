@@ -913,3 +913,49 @@ fn depot_without_any_render_still_misses() {
             .is_none()
     );
 }
+
+/// A G-series depot's manifest places its renders in a subdirectory
+/// (`images/device/<uuid>`). The colour variant there resolves like one at
+/// the depot root, instead of the base model's `front.png`.
+#[test]
+fn resolves_a_variant_render_in_a_subdirectory() {
+    let root = tempfile::tempdir().expect("create temp dir");
+    let dir = root.path().join("g502x_plus");
+    std::fs::create_dir_all(dir.join("images/device")).expect("create depot dir");
+    std::fs::write(
+        dir.join("manifest.json"),
+        r#"{"devices":[{"modelId":"g502x_plus_ext1","resources":[
+            {"key":"device_image","src":"images/device/top1"}]}]}"#,
+    )
+    .expect("write manifest");
+    std::fs::write(
+        dir.join("metadata.json"),
+        r#"{"images":[{"key":"device_image","origin":{"width":1391,"height":2700}}]}"#,
+    )
+    .expect("write metadata");
+    std::fs::write(dir.join("front.png"), png_header(1662, 2800)).expect("write front");
+    std::fs::write(dir.join("images/device/top1"), png_header(1661, 2800)).expect("write variant");
+    let index = index_of(
+        "g502x_plus",
+        DeviceEntry {
+            model_id: "c095".into(),
+            model_ids: vec!["c095".into(), "4099".into()],
+            display_name: "G502 X PLUS".into(),
+            kind: "MOUSE".into(),
+            asset_path: "v1/devices/g502x_plus/".into(),
+            files: registry_files(&["metadata.json", "manifest.json", "front.png"]),
+        },
+    );
+    let ext1 = DeviceModelInfo {
+        model_ids: [0x4099, 0xc095, 0],
+        extended_model_id: 1,
+        ..bare_model()
+    };
+
+    let asset = resolver_over(&[root.path()], Some(index))
+        .resolve(&ext1, None)
+        .expect("the variant resolves");
+
+    assert_eq!(asset.image_path, dir.join("images/device/top1"));
+    assert_eq!(asset.png_width, 1661);
+}

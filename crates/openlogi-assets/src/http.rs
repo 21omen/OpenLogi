@@ -200,9 +200,9 @@ impl AssetClient {
         dir: &Path,
         file: &FileEntry,
     ) -> Result<FetchOutcome, AssetError> {
-        // `name` comes from remote metadata; validate it down to a single
-        // path component before any path is built.
-        let dst = safe_component_path(dir, &file.name, "asset file name")?;
+        // `name` comes from remote metadata; validate every part of it
+        // before any path is built.
+        let dst = safe_asset_path(dir, &file.name, "asset file name")?;
         if cached_matches(&dst, &file.sha256) {
             return Ok(FetchOutcome::CacheHit);
         }
@@ -214,6 +214,12 @@ impl AssetClient {
                 expected: file.sha256.clone(),
                 actual,
             });
+        }
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent).map_err(|source| AssetError::WriteFile {
+                path: parent.to_owned(),
+                source,
+            })?;
         }
         write_replace(&dst, &bytes)?;
         Ok(FetchOutcome::Fetched { bytes: bytes.len() })
@@ -317,6 +323,29 @@ pub fn safe_component_path(
     }
 }
 
+/// Join one untrusted registry file name onto a trusted depot directory.
+///
+/// A depot's manifest may place a render in a subdirectory
+/// (`images/device/<uuid>`, as the G-series depots do), so a file name is a
+/// relative path of `/`-separated parts, each a plain name under the same
+/// rules as [`safe_component_path`]. Every write stays inside the depot.
+pub fn safe_asset_path(base: &Path, name: &str, label: &str) -> Result<PathBuf, AssetError> {
+    if name.is_empty() {
+        return Err(AssetError::UnsafeComponent {
+            label: label.to_owned(),
+            component: name.to_owned(),
+        });
+    }
+    name.split('/')
+        .try_fold(base.to_path_buf(), |path, part| {
+            safe_component_path(&path, part, label)
+        })
+        .map_err(|_| AssetError::UnsafeComponent {
+            label: label.to_owned(),
+            component: name.to_owned(),
+        })
+}
+
 /// Write `bytes` beside `dst` and atomically rename into place.
 ///
 /// The temporary file is created in the destination directory and committed via
@@ -362,7 +391,7 @@ pub fn cached_matches(path: &Path, expected_sha: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{AssetClient, is_retryable, safe_component_path, write_replace};
+    use super::{AssetClient, is_retryable, safe_asset_path, safe_component_path, write_replace};
     use std::path::Path;
     use ureq::Error;
 
@@ -435,6 +464,44 @@ mod tests {
         ] {
             assert!(
                 safe_component_path(Path::new("/cache"), name, "asset").is_err(),
+                "{name:?} should be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn safe_asset_path_accepts_nested_plain_names() {
+        assert_eq!(
+            safe_asset_path(Path::new("/cache"), "front.png", "asset").ok(),
+            Some(Path::new("/cache").join("front.png"))
+        );
+        assert_eq!(
+            safe_asset_path(Path::new("/cache"), "images/device/e0e9dacc", "asset").ok(),
+            Some(
+                Path::new("/cache")
+                    .join("images")
+                    .join("device")
+                    .join("e0e9dacc")
+            )
+        );
+    }
+
+    #[test]
+    fn safe_asset_path_rejects_traversal_in_any_part() {
+        for name in [
+            "",
+            "/",
+            "images/",
+            "/images/x",
+            "images//x",
+            "images/../../x",
+            "images/./x",
+            "..",
+            "images\\device\\x",
+            "images/device\\..\\x",
+        ] {
+            assert!(
+                safe_asset_path(Path::new("/cache"), name, "asset").is_err(),
                 "{name:?} should be rejected"
             );
         }

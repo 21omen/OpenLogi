@@ -32,7 +32,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use openlogi_assets::http::safe_component_path;
+use openlogi_assets::http::{safe_asset_path, safe_component_path};
 use openlogi_assets::{
     BUTTONS_RENDER_FILES, DepotManifest, DeviceEntry, FRONT_RENDER_FILES, Index, METADATA_FILES,
     Metadata,
@@ -348,7 +348,7 @@ impl AssetResolver {
                 .clone()
                 .into_iter()
                 .chain(FRONT_RENDER_FILES.map(str::to_string))
-                .filter_map(|n| safe_component_path(&dir, &n, "asset file").ok())
+                .filter_map(|n| safe_asset_path(&dir, &n, "asset file").ok())
                 .find(|p| p.exists());
             let image_name = buttons_name
                 .clone()
@@ -365,7 +365,7 @@ impl AssetResolver {
             candidates.extend(FRONT_RENDER_FILES.map(str::to_string));
             let Some(image_path) = candidates
                 .iter()
-                .filter_map(|n| safe_component_path(&dir, n, "asset file").ok())
+                .filter_map(|n| safe_asset_path(&dir, n, "asset file").ok())
                 .find(|p| p.exists())
             else {
                 continue;
@@ -445,7 +445,7 @@ impl AssetResolver {
             else {
                 continue;
             };
-            let Ok(image_path) = safe_component_path(&dir, image_name, "asset file") else {
+            let Ok(image_path) = safe_asset_path(&dir, image_name, "asset file") else {
                 continue;
             };
             if !image_path.is_file() {
@@ -508,7 +508,7 @@ fn resolve_metadata(
         .collect();
     candidates.extend(METADATA_FILES.map(str::to_string));
     candidates.into_iter().find_map(|name| {
-        let path = safe_component_path(dir, &name, "asset file").ok()?;
+        let path = safe_asset_path(dir, &name, "asset file").ok()?;
         path.exists().then_some((name, path))
     })
 }
